@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RGB Synth UI</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: sans-serif;
+            background: white;
+            color: black;
+        }
+
+        #topbar {
+            background: black;
+            padding: 10px;
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            background: #444;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        #content {
+            display: flex;
+            gap: 0;
+        }
+
+        .canvas-col {
+            display: flex;
+            flex-direction: column;
+        }
+
+        canvas {
+            display: block;
+            margin: 0;
+            padding: 0;
+            image-rendering: pixelated; /* makes zoomed pixels crisp */
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<div id="topbar">
+    <input type="file" id="fileInput" accept="image/*" style="display:none;">
+    <button id="uploadBtn">Upload</button>
+    <button id="playBtn">Play</button>
+    <button id="stopBtn">Stop</button>
+</div>
+
+<div id="content">
+    <div class="canvas-col">
+        <canvas id="canvasOriginal"></canvas>
+        <canvas id="canvasR"></canvas>
+        <canvas id="canvasG"></canvas>
+        <canvas id="canvasB"></canvas>
+    </div>
+</div>
+
+<script>
+    const uploadBtn = document.getElementById("uploadBtn");
+    const fileInput = document.getElementById("fileInput");
+    const playBtn = document.getElementById("playBtn");
+    const stopBtn = document.getElementById("stopBtn");
+
+    const canvasOriginal = document.getElementById("canvasOriginal");
+    const canvasR = document.getElementById("canvasR");
+    const canvasG = document.getElementById("canvasG");
+    const canvasB = document.getElementById("canvasB");
+
+    const ctxO = canvasOriginal.getContext("2d");
+    const ctxR = canvasR.getContext("2d");
+    const ctxG = canvasG.getContext("2d");
+    const ctxB = canvasB.getContext("2d");
+
+    let audioCtx, workletNode;
+    let pixelData = null;
+    const maxHeight = 100;
+    const baseFreq = 100;
+    const durationPerColumn = 0.1;
+
+    uploadBtn.onclick = () => fileInput.click();
+
+    fileInput.addEventListener("change", e => {
+        const file = e.target.files[0];
+        const img = new Image();
+        img.onload = () => {
+            let scale = img.height > maxHeight ? maxHeight / img.height : 1;
+            const newWidth = Math.round(img.width * scale);
+            const newHeight = Math.round(img.height * scale);
+
+            // Resize for processing
+            const tmpCanvas = document.createElement("canvas");
+            tmpCanvas.width = newWidth;
+            tmpCanvas.height = newHeight;
+            const tmpCtx = tmpCanvas.getContext("2d");
+            tmpCtx.drawImage(img, 0, 0, newWidth, newHeight);
+
+            const imageData = tmpCtx.getImageData(0, 0, newWidth, newHeight);
+            pixelData = {
+                width: newWidth,
+                height: newHeight,
+                data: Array.from(imageData.data)
+            };
+
+            // Draw zoomed versions (2x size)
+            [canvasOriginal, canvasR, canvasG, canvasB].forEach(c => {
+                c.width = newWidth * 2;
+                c.height = newHeight * 2;
+            });
+
+            // Helper canvas for channels
+            function drawChannelToCanvas(imgData, ctxTarget, targetCanvas) {
+                const helper = document.createElement("canvas");
+                helper.width = imgData.width;
+                helper.height = imgData.height;
+                const hctx = helper.getContext("2d");
+                hctx.putImageData(imgData, 0, 0);
+                ctxTarget.imageSmoothingEnabled = false;
+                ctxTarget.drawImage(helper, 0, 0, targetCanvas.width, targetCanvas.height);
+            }
+
+            // Magnitude channel
+            const imgM = ctxO.createImageData(newWidth, newHeight);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                const r = imageData.data[i];
+                const g = imageData.data[i + 1];
+                const b = imageData.data[i + 2];
+                const mag = Math.sqrt(r * r + g * g + b * b) / Math.sqrt(3 * 255 * 255) * 255;
+
+                imgM.data[i] = mag;
+                imgM.data[i + 1] = mag;
+                imgM.data[i + 2] = mag;
+                imgM.data[i + 3] = 255;
+            }
+            drawChannelToCanvas(imgM, ctxO, canvasOriginal);
+
+            // R channel
+            const imgR = ctxR.createImageData(newWidth, newHeight);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                imgR.data[i] = imageData.data[i];     // R
+                imgR.data[i + 1] = 0;
+                imgR.data[i + 2] = 0;
+                imgR.data[i + 3] = 255;
+            }
+            drawChannelToCanvas(imgR, ctxR, canvasR);
+
+            // G channel
+            const imgG = ctxG.createImageData(newWidth, newHeight);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                imgG.data[i] = 0;
+                imgG.data[i + 1] = imageData.data[i + 1];
+                imgG.data[i + 2] = 0;
+                imgG.data[i + 3] = 255;
+            }
+            drawChannelToCanvas(imgG, ctxG, canvasG);
+
+            // B channel
+            const imgB = ctxB.createImageData(newWidth, newHeight);
+            for (let i = 0; i < imageData.data.length; i += 4) {
+                imgB.data[i] = 0;
+                imgB.data[i + 1] = 0;
+                imgB.data[i + 2] = imageData.data[i + 2];
+                imgB.data[i + 3] = 255;
+            }
+            drawChannelToCanvas(imgB, ctxB, canvasB);
+
+            console.log("Image loaded:", newWidth, "x", newHeight);
+        };
+        img.src = URL.createObjectURL(file);
+    });
+
+    playBtn.addEventListener("click", async () => {
+        if (!pixelData) {
+            alert("Load an image first!");
+            return;
+        }
+        if (audioCtx && audioCtx.state !== "closed") {
+            console.log("Already playing");
+            return;
+        }
+
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        await audioCtx.resume();
+        await audioCtx.audioWorklet.addModule("rgb_full_worklet.js");
+
+        workletNode = new AudioWorkletNode(audioCtx, "rgb-full-synth");
+        workletNode.connect(audioCtx.destination);
+
+        workletNode.port.postMessage({
+            type: "config",
+            baseFreq,
+            durationPerColumn,
+            sampleRate: audioCtx.sampleRate,
+            pixelData
+        });
+
+        console.log("Loop playback started");
+    });
+
+    stopBtn.addEventListener("click", () => {
+        if (audioCtx) {
+            audioCtx.close();
+            audioCtx = null;
+            console.log("Playback stopped");
+        }
+    });
+</script>
+</body>
+</html>
