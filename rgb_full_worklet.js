@@ -4,14 +4,36 @@ class RgbFullSynth extends AudioWorkletProcessor {
         this.config = null;
         this.t = 0;
         this.samplesPerColumn = 0;
+        this.durationPerColumn = 0.1;
+        this.detuneAmount = 1;
+        this.stereoWidth = 1;
 
         this.port.onmessage = (event) => {
             if (event.data.type === "config") {
                 this.config = event.data;
-                this.samplesPerColumn = Math.floor(
-                    this.config.durationPerColumn * this.config.sampleRate
-                );
+                this.durationPerColumn = event.data.durationPerColumn;
+                this.detuneAmount = event.data.detuneAmount ?? 1;
+                this.stereoWidth = event.data.stereoWidth ?? 1;
+                this.samplesPerColumn = Math.max(1, Math.floor(
+                    this.durationPerColumn * this.config.sampleRate
+                ));
                 this.t = 0;
+            } else if (event.data.type === "params" && this.config) {
+                if (typeof event.data.durationPerColumn === "number") {
+                    this.durationPerColumn = event.data.durationPerColumn;
+                    this.samplesPerColumn = Math.max(1, Math.floor(
+                        this.durationPerColumn * this.config.sampleRate
+                    ));
+                    this.config.durationPerColumn = this.durationPerColumn;
+                }
+                if (typeof event.data.detuneAmount === "number") {
+                    this.detuneAmount = event.data.detuneAmount;
+                    this.config.detuneAmount = this.detuneAmount;
+                }
+                if (typeof event.data.stereoWidth === "number") {
+                    this.stereoWidth = event.data.stereoWidth;
+                    this.config.stereoWidth = this.stereoWidth;
+                }
             }
         };
     }
@@ -47,8 +69,9 @@ class RgbFullSynth extends AudioWorkletProcessor {
                 // base frequency for this harmonic
                 const freqBase = baseFreq * (y + 1);
 
-                // detune = ±5% from green channel
-                const detuneFactor = 1 + (gVal - 0.5) * 0.1;
+                // detune scaled by UI control (0-200%)
+                const detuneRange = 0.1 * this.detuneAmount;
+                const detuneFactor = 1 + (gVal - 0.5) * detuneRange;
                 const freq = freqBase * detuneFactor;
 
                 // phase = red channel maps to [0, 2π]
@@ -57,8 +80,8 @@ class RgbFullSynth extends AudioWorkletProcessor {
                 // oscillator sample
                 const s = amp * Math.sin(2 * Math.PI * freq * time + phase);
 
-                // stereo pan from blue channel [0 = left, 1 = right]
-                const pan = bVal;
+                // stereo pan scaled by UI control
+                const pan = 0.5 + (bVal - 0.5) * this.stereoWidth;
                 const lGain = Math.cos(pan * Math.PI / 2);
                 const rGain = Math.sin(pan * Math.PI / 2);
 

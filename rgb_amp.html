@@ -15,7 +15,31 @@
             background: black;
             padding: 10px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
+            align-items: center;
+            flex-wrap: wrap;
+            color: white;
+        }
+
+        .control {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .control label {
+            white-space: nowrap;
+        }
+
+        .control span {
+            min-width: 48px;
+            text-align: right;
+        }
+
+        input[type="range"] {
+            accent-color: #888;
         }
 
         button {
@@ -55,6 +79,24 @@
     <button id="uploadBtn">Upload</button>
     <button id="playBtn">Play</button>
     <button id="stopBtn">Stop</button>
+
+    <div class="control">
+        <label for="detuneControl">Detune</label>
+        <input type="range" id="detuneControl" min="0" max="200" value="100">
+        <span id="detuneValue">100%</span>
+    </div>
+
+    <div class="control">
+        <label for="stereoControl">Stereo</label>
+        <input type="range" id="stereoControl" min="0" max="100" value="100">
+        <span id="stereoValue">100%</span>
+    </div>
+
+    <div class="control">
+        <label for="speedControl">Speed</label>
+        <input type="range" id="speedControl" min="0.02" max="0.5" step="0.01" value="0.1">
+        <span id="speedValue">0.10s/col</span>
+    </div>
 </div>
 
 <div id="content">
@@ -71,6 +113,12 @@
     const fileInput = document.getElementById("fileInput");
     const playBtn = document.getElementById("playBtn");
     const stopBtn = document.getElementById("stopBtn");
+    const detuneControl = document.getElementById("detuneControl");
+    const detuneValue = document.getElementById("detuneValue");
+    const stereoControl = document.getElementById("stereoControl");
+    const stereoValue = document.getElementById("stereoValue");
+    const speedControl = document.getElementById("speedControl");
+    const speedValue = document.getElementById("speedValue");
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
@@ -86,7 +134,55 @@
     let pixelData = null;
     const maxHeight = 100;
     const baseFreq = 100;
-    const durationPerColumn = 0.1;
+
+    let detuneAmount = parseFloat(detuneControl.value) / 100;
+    let stereoWidth = parseFloat(stereoControl.value) / 100;
+    let durationPerColumn = parseFloat(speedControl.value);
+
+    const updateDetuneDisplay = () => {
+        detuneValue.textContent = `${Math.round(detuneAmount * 100)}%`;
+    };
+
+    const updateStereoDisplay = () => {
+        stereoValue.textContent = `${Math.round(stereoWidth * 100)}%`;
+    };
+
+    const updateSpeedDisplay = () => {
+        speedValue.textContent = `${durationPerColumn.toFixed(2)}s/col`;
+    };
+
+    updateDetuneDisplay();
+    updateStereoDisplay();
+    updateSpeedDisplay();
+
+    const sendParamsToWorklet = () => {
+        if (workletNode) {
+            workletNode.port.postMessage({
+                type: "params",
+                detuneAmount,
+                stereoWidth,
+                durationPerColumn
+            });
+        }
+    };
+
+    detuneControl.addEventListener("input", () => {
+        detuneAmount = parseFloat(detuneControl.value) / 100;
+        updateDetuneDisplay();
+        sendParamsToWorklet();
+    });
+
+    stereoControl.addEventListener("input", () => {
+        stereoWidth = parseFloat(stereoControl.value) / 100;
+        updateStereoDisplay();
+        sendParamsToWorklet();
+    });
+
+    speedControl.addEventListener("input", () => {
+        durationPerColumn = parseFloat(speedControl.value);
+        updateSpeedDisplay();
+        sendParamsToWorklet();
+    });
 
     uploadBtn.onclick = () => fileInput.click();
 
@@ -196,10 +292,19 @@
         workletNode = new AudioWorkletNode(audioCtx, "rgb-full-synth");
         workletNode.connect(audioCtx.destination);
 
+        durationPerColumn = parseFloat(speedControl.value);
+        detuneAmount = parseFloat(detuneControl.value) / 100;
+        stereoWidth = parseFloat(stereoControl.value) / 100;
+        updateSpeedDisplay();
+        updateDetuneDisplay();
+        updateStereoDisplay();
+
         workletNode.port.postMessage({
             type: "config",
             baseFreq,
             durationPerColumn,
+            detuneAmount,
+            stereoWidth,
             sampleRate: audioCtx.sampleRate,
             pixelData
         });
@@ -211,6 +316,7 @@
         if (audioCtx) {
             audioCtx.close();
             audioCtx = null;
+            workletNode = null;
             console.log("Playback stopped");
         }
     });
