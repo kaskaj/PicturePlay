@@ -38,6 +38,10 @@
             text-align: right;
         }
 
+        .hidden {
+            display: none !important;
+        }
+
         .knob-control {
             flex-direction: column;
             align-items: center;
@@ -56,6 +60,65 @@
             text-align: center;
             font-variant-numeric: tabular-nums;
             font-size: 12px;
+        }
+
+        .select-control {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            align-items: flex-start;
+            min-width: 120px;
+        }
+
+        .select-control label {
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+            color: white;
+        }
+
+        .select-control select {
+            background: #222;
+            color: white;
+            border: 1px solid #555;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+
+        .tonal-notes {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 8px 10px;
+            border-radius: 6px;
+            color: white;
+            width: 100%;
+        }
+
+        .tonal-notes__label {
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .tonal-notes__grid {
+            display: grid;
+            grid-template-columns: repeat(6, minmax(0, 1fr));
+            gap: 4px 12px;
+            font-size: 12px;
+        }
+
+        .tonal-notes__grid label {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+        }
+
+        .tonal-notes__grid input {
+            accent-color: #888;
         }
 
         .knob-wrapper {
@@ -144,19 +207,19 @@
     <div class="control knob-control">
         <label for="detuneControl">Detune</label>
         <div class="knob-wrapper">
-            <input type="range" id="detuneControl" min="0" max="200" value="100" class="knob-input">
+            <input type="range" id="detuneControl" min="0" max="200" value="10" class="knob-input">
             <div class="knob-visual"></div>
         </div>
-        <span id="detuneValue">100%</span>
+        <span id="detuneValue">10%</span>
     </div>
 
     <div class="control knob-control">
         <label for="stereoControl">Stereo</label>
         <div class="knob-wrapper">
-            <input type="range" id="stereoControl" min="0" max="100" value="100" class="knob-input">
+            <input type="range" id="stereoControl" min="0" max="100" value="50" class="knob-input">
             <div class="knob-visual"></div>
         </div>
-        <span id="stereoValue">100%</span>
+        <span id="stereoValue">50%</span>
     </div>
 
     <div class="control knob-control">
@@ -177,13 +240,26 @@
         <span id="contrastValue">0%</span>
     </div>
 
-    <div class="control knob-control">
+    <div class="control knob-control" id="baseFreqWrapper">
         <label for="baseFreqControl">Base Freq</label>
         <div class="knob-wrapper">
             <input type="range" id="baseFreqControl" min="20" max="1000" value="100" class="knob-input">
             <div class="knob-visual"></div>
         </div>
         <span id="baseFreqValue">100 Hz</span>
+    </div>
+
+    <div class="control select-control hidden" id="octaveWrapper">
+        <label for="octaveSelect">Octave</label>
+        <select id="octaveSelect">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3" selected>3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+        </select>
     </div>
 
     <div class="control knob-control">
@@ -196,12 +272,68 @@
     </div>
 
     <div class="control knob-control">
-        <label for="releaseControl">Release</label>
+        <label for="decayControl">Decay</label>
         <div class="knob-wrapper">
-            <input type="range" id="releaseControl" min="0" max="1" step="0.01" value="0" class="knob-input">
+            <input type="range" id="decayControl" min="0" max="1" step="0.01" value="0" class="knob-input">
             <div class="knob-visual"></div>
         </div>
-        <span id="releaseValue">0.00s</span>
+        <span id="decayValue">0.00s</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="phaseControl">Phase</label>
+        <div class="knob-wrapper">
+            <input type="range" id="phaseControl" min="0" max="200" value="100" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="phaseValue">100%</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="harmonicsControl">Harmonics</label>
+        <div class="knob-wrapper">
+            <input type="range" id="harmonicsControl" min="1" max="100" value="100" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="harmonicsValue">100</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="reverbControl">Reverb</label>
+        <div class="knob-wrapper">
+            <input type="range" id="reverbControl" min="0" max="100" value="0" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="reverbValue">0%</span>
+    </div>
+
+    <div class="control select-control">
+        <label for="harmonicModeSelect">Mode</label>
+        <select id="harmonicModeSelect">
+            <option value="all">All harmonics</option>
+            <option value="odd">Odd harmonics</option>
+            <option value="even">Even harmonics</option>
+            <option value="tonal">Tonal</option>
+        </select>
+    </div>
+
+    <div class="tonal-notes hidden" id="tonalNoteSelector">
+        <span class="tonal-notes__label">Notes</span>
+        <div class="tonal-notes__grid">
+            <label><input type="checkbox" class="tonal-note" value="C" checked>C</label>
+            <label><input type="checkbox" class="tonal-note" value="#C" checked>#C</label>
+            <label><input type="checkbox" class="tonal-note" value="D" checked>D</label>
+            <label><input type="checkbox" class="tonal-note" value="#D" checked>#D</label>
+            <label><input type="checkbox" class="tonal-note" value="E" checked>E</label>
+            <label><input type="checkbox" class="tonal-note" value="F" checked>F</label>
+            <label><input type="checkbox" class="tonal-note" value="#F" checked>#F</label>
+            <label><input type="checkbox" class="tonal-note" value="G" checked>G</label>
+            <label><input type="checkbox" class="tonal-note" value="#G" checked>#G</label>
+            <label><input type="checkbox" class="tonal-note" value="A" checked>A</label>
+            <label><input type="checkbox" class="tonal-note" value="#A" checked>#A</label>
+            <label><input type="checkbox" class="tonal-note" value="H" checked>H</label>
+            <label><input type="checkbox" class="tonal-note" value="#H" checked>#H</label>
+        </div>
     </div>
 </div>
 
@@ -234,8 +366,20 @@
     const baseFreqValue = document.getElementById("baseFreqValue");
     const attackControl = document.getElementById("attackControl");
     const attackValue = document.getElementById("attackValue");
-    const releaseControl = document.getElementById("releaseControl");
-    const releaseValue = document.getElementById("releaseValue");
+    const decayControl = document.getElementById("decayControl");
+    const decayValue = document.getElementById("decayValue");
+    const harmonicsControl = document.getElementById("harmonicsControl");
+    const harmonicsValue = document.getElementById("harmonicsValue");
+    const phaseControl = document.getElementById("phaseControl");
+    const phaseValue = document.getElementById("phaseValue");
+    const reverbControl = document.getElementById("reverbControl");
+    const reverbValue = document.getElementById("reverbValue");
+    const harmonicModeSelect = document.getElementById("harmonicModeSelect");
+    const baseFreqWrapper = document.getElementById("baseFreqWrapper");
+    const octaveWrapper = document.getElementById("octaveWrapper");
+    const octaveSelect = document.getElementById("octaveSelect");
+    const tonalNoteSelector = document.getElementById("tonalNoteSelector");
+    const tonalNoteCheckboxes = Array.from(document.querySelectorAll(".tonal-note"));
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
@@ -263,7 +407,38 @@
     let contrastAmount = parseFloat(contrastControl.value);
     let baseFrequency = parseFloat(baseFreqControl.value) || 100;
     let attackTime = parseFloat(attackControl.value) || 0;
-    let releaseTime = parseFloat(releaseControl.value) || 0;
+    let decayTime = parseFloat(decayControl.value) || 0;
+    let harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
+    let harmonicMode = harmonicModeSelect.value || 'all';
+    let baseOctave = parseInt(octaveSelect.value, 10) || 3;
+    let phaseAmount = (() => {
+        const parsed = parseFloat(phaseControl.value);
+        return Number.isFinite(parsed) ? parsed / 100 : 1;
+    })();
+    let reverbMix = parseFloat(reverbControl.value) / 100 || 0;
+
+    let convolverNode = null;
+    let dryGainNode = null;
+    let wetGainNode = null;
+    let reverbImpulseBuffer = null;
+
+    const NOTE_TO_SEMITONE = Object.freeze({
+        'C': 0,
+        '#C': 1,
+        'D': 2,
+        '#D': 3,
+        'E': 4,
+        'F': 5,
+        '#F': 6,
+        'G': 7,
+        '#G': 8,
+        'A': 9,
+        '#A': 10,
+        'H': 11,
+        '#H': 12
+    });
+
+    let selectedNoteNames = tonalNoteCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
 
     const updateDetuneDisplay = () => {
         detuneValue.textContent = `${Math.round(detuneAmount * 100)}%`;
@@ -289,8 +464,111 @@
         attackValue.textContent = `${attackTime.toFixed(2)}s`;
     };
 
-    const updateReleaseDisplay = () => {
-        releaseValue.textContent = `${releaseTime.toFixed(2)}s`;
+    const updateDecayDisplay = () => {
+        decayValue.textContent = `${decayTime.toFixed(2)}s`;
+    };
+
+    const updateHarmonicsDisplay = () => {
+        harmonicsValue.textContent = `${Math.round(harmonicCount)}`;
+    };
+
+    const updatePhaseDisplay = () => {
+        phaseValue.textContent = `${Math.round(phaseAmount * 100)}%`;
+    };
+
+    const updateReverbDisplay = () => {
+        reverbValue.textContent = `${Math.round(reverbMix * 100)}%`;
+    };
+
+    const ensureSelectedNotes = () => {
+        const names = tonalNoteCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+        if (names.length === 0 && tonalNoteCheckboxes.length) {
+            tonalNoteCheckboxes[0].checked = true;
+            return [tonalNoteCheckboxes[0].value];
+        }
+        return names;
+    };
+
+    const getSelectedTonalSemitones = () => {
+        selectedNoteNames = ensureSelectedNotes();
+        return selectedNoteNames
+            .map(name => NOTE_TO_SEMITONE[name])
+            .filter(n => n !== undefined);
+    };
+
+    const updateModeUI = () => {
+        const isTonal = harmonicMode === 'tonal';
+        if (baseFreqWrapper) baseFreqWrapper.classList.toggle('hidden', isTonal);
+        if (octaveWrapper) octaveWrapper.classList.toggle('hidden', !isTonal);
+        if (tonalNoteSelector) tonalNoteSelector.classList.toggle('hidden', !isTonal);
+        if (isTonal) {
+            selectedNoteNames = ensureSelectedNotes();
+        }
+    };
+
+    const loadImpulseResponse = async (context) => {
+        if (reverbImpulseBuffer) return reverbImpulseBuffer;
+        try {
+            const response = await fetch('impulses/stone.aif');
+            if (!response.ok) throw new Error('Failed to load impulse response');
+            const arrayBuffer = await response.arrayBuffer();
+            reverbImpulseBuffer = await context.decodeAudioData(arrayBuffer.slice(0));
+        } catch (err) {
+            console.error('Impulse load error', err);
+            const rate = context.sampleRate;
+            const length = Math.max(1, Math.floor(rate * 1.5));
+            const impulse = context.createBuffer(2, length, rate);
+            for (let channel = 0; channel < impulse.numberOfChannels; channel++) {
+                const data = impulse.getChannelData(channel);
+                for (let i = 0; i < length; i++) {
+                    const t = i / length;
+                    data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.0);
+                }
+            }
+            reverbImpulseBuffer = impulse;
+        }
+        return reverbImpulseBuffer;
+    };
+
+    const updateReverbMix = () => {
+        const dry = Math.max(0, Math.min(1, 1 - reverbMix));
+        const wet = Math.max(0, Math.min(1, reverbMix));
+        if (dryGainNode && audioCtx) {
+            dryGainNode.gain.setValueAtTime(dry, audioCtx.currentTime);
+        }
+        if (wetGainNode && audioCtx) {
+            wetGainNode.gain.setValueAtTime(wet, audioCtx.currentTime);
+        }
+        updateReverbDisplay();
+    };
+
+    const ensureReverbNodes = async () => {
+        if (!audioCtx || !workletNode) return;
+        if (!convolverNode) {
+            convolverNode = audioCtx.createConvolver();
+            convolverNode.normalize = true;
+            const buffer = await loadImpulseResponse(audioCtx);
+            convolverNode.buffer = buffer;
+            dryGainNode = audioCtx.createGain();
+            wetGainNode = audioCtx.createGain();
+            updateReverbMix();
+            workletNode.connect(dryGainNode);
+            workletNode.connect(convolverNode);
+            convolverNode.connect(wetGainNode);
+            dryGainNode.connect(audioCtx.destination);
+            wetGainNode.connect(audioCtx.destination);
+        }
+    };
+
+    const teardownReverbNodes = () => {
+        if (workletNode && dryGainNode) workletNode.disconnect(dryGainNode);
+        if (workletNode && convolverNode) workletNode.disconnect(convolverNode);
+        if (dryGainNode) dryGainNode.disconnect();
+        if (wetGainNode) wetGainNode.disconnect();
+        if (convolverNode) convolverNode.disconnect();
+        convolverNode = null;
+        dryGainNode = null;
+        wetGainNode = null;
     };
 
     const setKnobAngle = (input) => {
@@ -438,12 +716,19 @@
     updateContrastDisplay();
     updateBaseFreqDisplay();
     updateAttackDisplay();
-    updateReleaseDisplay();
+    updateDecayDisplay();
+    updateHarmonicsDisplay();
+    updatePhaseDisplay();
+    updateReverbDisplay();
 
-    [detuneControl, stereoControl, speedControl, contrastControl, baseFreqControl, attackControl, releaseControl].forEach(registerKnob);
+    selectedNoteNames = ensureSelectedNotes();
+    updateModeUI();
+
+    [detuneControl, stereoControl, speedControl, contrastControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl].forEach(registerKnob);
 
     const sendParamsToWorklet = () => {
         if (workletNode) {
+            const tonalNotes = getSelectedTonalSemitones();
             workletNode.port.postMessage({
                 type: "params",
                 detuneAmount,
@@ -451,7 +736,13 @@
                 durationPerColumn,
                 baseFrequency,
                 attackTime,
-                releaseTime
+                decayTime,
+                harmonicCount,
+                harmonicMode,
+                baseOctave,
+                tonalNotes,
+                phaseAmount,
+                reverbMix
             });
         }
     };
@@ -480,10 +771,62 @@
         sendParamsToWorklet();
     });
 
-    releaseControl.addEventListener("input", () => {
-        releaseTime = parseFloat(releaseControl.value) || 0;
-        updateReleaseDisplay();
+    decayControl.addEventListener("input", () => {
+        decayTime = parseFloat(decayControl.value) || 0;
+        updateDecayDisplay();
         sendParamsToWorklet();
+    });
+
+    phaseControl.addEventListener("input", () => {
+        const parsed = parseFloat(phaseControl.value);
+        phaseAmount = Number.isFinite(parsed) ? parsed / 100 : phaseAmount;
+        updatePhaseDisplay();
+        sendParamsToWorklet();
+    });
+
+    harmonicsControl.addEventListener("input", () => {
+        harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
+        updateHarmonicsDisplay();
+        sendParamsToWorklet();
+    });
+
+    reverbControl.addEventListener("input", async () => {
+        reverbMix = Math.max(0, Math.min(1, parseFloat(reverbControl.value) / 100));
+        await ensureReverbNodes();
+        updateReverbMix();
+        sendParamsToWorklet();
+    });
+
+    harmonicModeSelect.addEventListener("change", async () => {
+        harmonicMode = harmonicModeSelect.value || 'all';
+        updateModeUI();
+        if (harmonicMode === 'tonal') {
+            await ensureReverbNodes();
+        }
+        sendParamsToWorklet();
+    });
+
+    if (octaveSelect) {
+        octaveSelect.addEventListener("change", async () => {
+            const parsed = parseInt(octaveSelect.value, 10);
+            if (Number.isFinite(parsed)) {
+                baseOctave = parsed;
+            }
+            if (harmonicMode === 'tonal') {
+                await ensureReverbNodes();
+                sendParamsToWorklet();
+            }
+        });
+    }
+
+    tonalNoteCheckboxes.forEach(cb => {
+        cb.addEventListener("change", async () => {
+            selectedNoteNames = ensureSelectedNotes();
+            if (harmonicMode === 'tonal') {
+                await ensureReverbNodes();
+                sendParamsToWorklet();
+            }
+        });
     });
 
     contrastControl.addEventListener("input", () => {
@@ -562,12 +905,13 @@
         await audioCtx.audioWorklet.addModule("rgb_full_worklet.js");
 
         workletNode = new AudioWorkletNode(audioCtx, "rgb-full-synth");
-        workletNode.connect(audioCtx.destination);
         workletNode.port.onmessage = (event) => {
             if (event.data.type === "column") {
                 drawHighlight(event.data.column);
             }
         };
+        await ensureReverbNodes();
+        updateReverbMix();
         clearHighlight();
 
         durationPerColumn = parseFloat(speedControl.value);
@@ -578,31 +922,53 @@
             baseFrequency = parsedBase;
         }
         attackTime = parseFloat(attackControl.value) || 0;
-        releaseTime = parseFloat(releaseControl.value) || 0;
+        decayTime = parseFloat(decayControl.value) || 0;
+        harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
+        harmonicMode = harmonicModeSelect.value || 'all';
+        const parsedOctave = parseInt(octaveSelect.value, 10);
+        if (Number.isFinite(parsedOctave)) {
+            baseOctave = parsedOctave;
+        }
+        const parsedPhase = parseFloat(phaseControl.value);
+        phaseAmount = Number.isFinite(parsedPhase) ? parsedPhase / 100 : phaseAmount;
+        reverbMix = Math.max(0, Math.min(1, parseFloat(reverbControl.value) / 100 || 0));
         updateSpeedDisplay();
         updateDetuneDisplay();
         updateStereoDisplay();
         updateBaseFreqDisplay();
         updateAttackDisplay();
-        updateReleaseDisplay();
+        updateDecayDisplay();
+        updateHarmonicsDisplay();
+        updatePhaseDisplay();
+        updateReverbDisplay();
 
-        workletNode.port.postMessage({
-            type: "config",
-            baseFreq: baseFrequency,
-            durationPerColumn,
-            detuneAmount,
-            stereoWidth,
-            attackTime,
-            releaseTime,
-            sampleRate: audioCtx.sampleRate,
-            pixelData
-        });
+        {
+            const tonalNotes = getSelectedTonalSemitones();
+            workletNode.port.postMessage({
+                type: "config",
+                baseFreq: baseFrequency,
+                durationPerColumn,
+                detuneAmount,
+                stereoWidth,
+                attackTime,
+                decayTime,
+                harmonicCount,
+                harmonicMode,
+                baseOctave,
+                tonalNotes,
+                phaseAmount,
+                reverbMix,
+                sampleRate: audioCtx.sampleRate,
+                pixelData
+            });
+        }
 
         console.log("Loop playback started");
     });
 
     stopBtn.addEventListener("click", () => {
         if (audioCtx) {
+            teardownReverbNodes();
             audioCtx.close();
             audioCtx = null;
             workletNode = null;
