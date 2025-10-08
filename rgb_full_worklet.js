@@ -8,6 +8,8 @@ class RgbFullSynth extends AudioWorkletProcessor {
         this.detuneAmount = 1;
         this.stereoWidth = 1;
         this.lastColumnReported = -1;
+        this.attackTime = 0;
+        this.releaseTime = 0;
 
         this.port.onmessage = (event) => {
             if (event.data.type === "config") {
@@ -18,6 +20,13 @@ class RgbFullSynth extends AudioWorkletProcessor {
                 this.samplesPerColumn = Math.max(1, Math.floor(
                     this.durationPerColumn * this.config.sampleRate
                 ));
+                if (typeof event.data.baseFreq === "number") {
+                    this.config.baseFreq = event.data.baseFreq;
+                }
+                this.setAttack(event.data.attackTime ?? this.attackTime);
+                this.setRelease(event.data.releaseTime ?? this.releaseTime);
+                this.config.attackTime = this.attackTime;
+                this.config.releaseTime = this.releaseTime;
                 this.t = 0;
                 this.lastColumnReported = -1;
             } else if (event.data.type === "params" && this.config) {
@@ -39,11 +48,54 @@ class RgbFullSynth extends AudioWorkletProcessor {
                 if (typeof event.data.baseFrequency === "number") {
                     this.config.baseFreq = event.data.baseFrequency;
                 }
+                if (typeof event.data.attackTime === "number") {
+                    this.setAttack(event.data.attackTime);
+                    this.config.attackTime = this.attackTime;
+                }
+                if (typeof event.data.releaseTime === "number") {
+                    this.setRelease(event.data.releaseTime);
+                    this.config.releaseTime = this.releaseTime;
+                }
             } else if (event.data.type === "pixels" && this.config && event.data.pixelData) {
                 this.config.pixelData = event.data.pixelData;
                 this.lastColumnReported = -1;
             }
         };
+    }
+
+    setAttack(timeSeconds) {
+        this.attackTime = Math.max(0, timeSeconds || 0);
+    }
+
+    setRelease(timeSeconds) {
+        this.releaseTime = Math.max(0, timeSeconds || 0);
+    }
+
+    computeEnvelope(sampleIndex) {
+        if (!this.config || !this.config.sampleRate) return 1;
+        const total = this.samplesPerColumn || 0;
+        if (total <= 0) return 1;
+        const sr = this.config.sampleRate;
+
+        let envelope = 1;
+        const attackSamples = Math.min(total, Math.max(0, Math.round(this.attackTime * sr)));
+        if (attackSamples > 0 && sampleIndex < attackSamples) {
+            envelope = sampleIndex / attackSamples;
+        }
+
+        const releaseSamples = Math.min(total, Math.max(0, Math.round(this.releaseTime * sr)));
+        if (releaseSamples > 0) {
+            const releaseStart = Math.max(0, total - releaseSamples);
+            if (sampleIndex >= releaseStart) {
+                const remaining = total - sampleIndex;
+                const releaseEnv = releaseSamples > 0 ? remaining / releaseSamples : 1;
+                envelope = Math.min(envelope, releaseEnv);
+            }
+        }
+
+        if (envelope < 0) envelope = 0;
+        if (envelope > 1) envelope = 1;
+        return envelope;
     }
 
     process(inputs, outputs) {
@@ -54,7 +106,10 @@ class RgbFullSynth extends AudioWorkletProcessor {
         const R = output[1] || output[0];
 
         const {pixelData, baseFreq, sampleRate} = this.config;
+        if (!pixelData) return true;
         const {width, height, data} = pixelData;
+        if (!width || !height) return true;
+
 
         for (let i = 0; i < L.length; i++) {
             let col = Math.floor(this.t / this.samplesPerColumn) % width;
@@ -68,6 +123,8 @@ class RgbFullSynth extends AudioWorkletProcessor {
             let left = 0;
             let right = 0;
 
+            const envelope = this.computeEnvelope(sampleIndex);
+
             for (let y = 0; y < height; y++) {
                 const idx = (y * width + col) * 4;
                 const rVal = data[idx] / 255;
@@ -75,8 +132,9 @@ class RgbFullSynth extends AudioWorkletProcessor {
                 const bVal = data[idx + 2] / 255;
 
                 // amplitude = vector magnitude
-                const amp = Math.sqrt(rVal * rVal + gVal * gVal + bVal * bVal);
-                if (amp < 0.001) continue;
+                const baseAmp = Math.sqrt(rVal * rVal + gVal * gVal + bVal * bVal);
+                const amp = baseAmp * envelope;
+                if (amp < 0.0001) continue;
 
                 // base frequency for this harmonic
                 const freqBase = baseFreq * (y + 1);

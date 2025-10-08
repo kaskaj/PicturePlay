@@ -41,8 +41,8 @@
         .knob-control {
             flex-direction: column;
             align-items: center;
-            gap: 8px;
-            min-width: 88px;
+            gap: 6px;
+            min-width: 64px;
         }
 
         .knob-control label {
@@ -55,12 +55,13 @@
             min-width: auto;
             text-align: center;
             font-variant-numeric: tabular-nums;
+            font-size: 12px;
         }
 
         .knob-wrapper {
             position: relative;
-            width: 64px;
-            height: 64px;
+            width: 40px;
+            height: 40px;
         }
 
         .knob-input {
@@ -79,23 +80,10 @@
             position: absolute;
             inset: 0;
             border-radius: 50%;
-            background: radial-gradient(circle at 30% 30%, #666, #222);
-            box-shadow: inset -2px -2px 6px rgba(0, 0, 0, 0.6), inset 2px 2px 6px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            background: conic-gradient(from -135deg, #cfcfcf 0deg, #cfcfcf var(--fill, 0deg), #ffffff var(--fill, 0deg), #ffffff 360deg);
+            box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.35);
             pointer-events: none;
-        }
-
-        .knob-visual::after {
-            content: "";
-            position: absolute;
-            bottom: 18px;
-            left: 50%;
-            width: 4px;
-            height: 26px;
-            border-radius: 2px;
-            background: white;
-            transform-origin: bottom center;
-            transform: translateX(-50%) rotate(var(--angle, -135deg));
-            box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
         }
 
         input[type="range"] {
@@ -197,6 +185,24 @@
         </div>
         <span id="baseFreqValue">100 Hz</span>
     </div>
+
+    <div class="control knob-control">
+        <label for="attackControl">Attack</label>
+        <div class="knob-wrapper">
+            <input type="range" id="attackControl" min="0" max="1" step="0.01" value="0" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="attackValue">0.00s</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="releaseControl">Release</label>
+        <div class="knob-wrapper">
+            <input type="range" id="releaseControl" min="0" max="1" step="0.01" value="0" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="releaseValue">0.00s</span>
+    </div>
 </div>
 
 <div id="content">
@@ -226,6 +232,10 @@
     const contrastValue = document.getElementById("contrastValue");
     const baseFreqControl = document.getElementById("baseFreqControl");
     const baseFreqValue = document.getElementById("baseFreqValue");
+    const attackControl = document.getElementById("attackControl");
+    const attackValue = document.getElementById("attackValue");
+    const releaseControl = document.getElementById("releaseControl");
+    const releaseValue = document.getElementById("releaseValue");
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
@@ -252,6 +262,8 @@
     let durationPerColumn = parseFloat(speedControl.value);
     let contrastAmount = parseFloat(contrastControl.value);
     let baseFrequency = parseFloat(baseFreqControl.value) || 100;
+    let attackTime = parseFloat(attackControl.value) || 0;
+    let releaseTime = parseFloat(releaseControl.value) || 0;
 
     const updateDetuneDisplay = () => {
         detuneValue.textContent = `${Math.round(detuneAmount * 100)}%`;
@@ -273,6 +285,14 @@
         baseFreqValue.textContent = `${Math.round(baseFrequency)} Hz`;
     };
 
+    const updateAttackDisplay = () => {
+        attackValue.textContent = `${attackTime.toFixed(2)}s`;
+    };
+
+    const updateReleaseDisplay = () => {
+        releaseValue.textContent = `${releaseTime.toFixed(2)}s`;
+    };
+
     const setKnobAngle = (input) => {
         if (!input) return;
         const wrapper = input.closest('.knob-wrapper');
@@ -284,11 +304,13 @@
         const value = parseFloat(input.value ?? '0');
         if (!isFinite(min) || !isFinite(max) || max === min || !isFinite(value)) {
             visual.style.setProperty('--angle', '-135deg');
+            visual.style.setProperty('--fill', '0deg');
             return;
         }
         const ratio = Math.min(1, Math.max(0, (value - min) / (max - min)));
-        const angle = ratio * 270 - 135;
-        visual.style.setProperty('--angle', `${angle}deg`);
+        const sweep = ratio * 270;
+        visual.style.setProperty('--fill', `${sweep}deg`);
+        visual.style.setProperty('--angle', `${sweep - 135}deg`);
     };
 
     const registerKnob = (input) => {
@@ -415,8 +437,10 @@
     updateSpeedDisplay();
     updateContrastDisplay();
     updateBaseFreqDisplay();
+    updateAttackDisplay();
+    updateReleaseDisplay();
 
-    [detuneControl, stereoControl, speedControl, contrastControl, baseFreqControl].forEach(registerKnob);
+    [detuneControl, stereoControl, speedControl, contrastControl, baseFreqControl, attackControl, releaseControl].forEach(registerKnob);
 
     const sendParamsToWorklet = () => {
         if (workletNode) {
@@ -425,7 +449,9 @@
                 detuneAmount,
                 stereoWidth,
                 durationPerColumn,
-                baseFrequency
+                baseFrequency,
+                attackTime,
+                releaseTime
             });
         }
     };
@@ -445,6 +471,18 @@
     speedControl.addEventListener("input", () => {
         durationPerColumn = parseFloat(speedControl.value);
         updateSpeedDisplay();
+        sendParamsToWorklet();
+    });
+
+    attackControl.addEventListener("input", () => {
+        attackTime = parseFloat(attackControl.value) || 0;
+        updateAttackDisplay();
+        sendParamsToWorklet();
+    });
+
+    releaseControl.addEventListener("input", () => {
+        releaseTime = parseFloat(releaseControl.value) || 0;
+        updateReleaseDisplay();
         sendParamsToWorklet();
     });
 
@@ -539,10 +577,14 @@
         if (Number.isFinite(parsedBase)) {
             baseFrequency = parsedBase;
         }
+        attackTime = parseFloat(attackControl.value) || 0;
+        releaseTime = parseFloat(releaseControl.value) || 0;
         updateSpeedDisplay();
         updateDetuneDisplay();
         updateStereoDisplay();
         updateBaseFreqDisplay();
+        updateAttackDisplay();
+        updateReleaseDisplay();
 
         workletNode.port.postMessage({
             type: "config",
@@ -550,6 +592,8 @@
             durationPerColumn,
             detuneAmount,
             stereoWidth,
+            attackTime,
+            releaseTime,
             sampleRate: audioCtx.sampleRate,
             pixelData
         });
