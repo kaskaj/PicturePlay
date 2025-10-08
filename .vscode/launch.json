@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Open in Safari",
+      "type": "shell",
+      "command": "open -a Safari ${file}",
+      "problemMatcher": []
+    }
+  ]
+}

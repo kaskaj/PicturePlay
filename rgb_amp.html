@@ -38,6 +38,66 @@
             text-align: right;
         }
 
+        .knob-control {
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            min-width: 88px;
+        }
+
+        .knob-control label {
+            font-size: 12px;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+        }
+
+        .knob-control span {
+            min-width: auto;
+            text-align: center;
+            font-variant-numeric: tabular-nums;
+        }
+
+        .knob-wrapper {
+            position: relative;
+            width: 64px;
+            height: 64px;
+        }
+
+        .knob-input {
+            position: absolute;
+            inset: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+            touch-action: none;
+            user-select: none;
+        }
+
+        .knob-visual {
+            position: absolute;
+            inset: 0;
+            border-radius: 50%;
+            background: radial-gradient(circle at 30% 30%, #666, #222);
+            box-shadow: inset -2px -2px 6px rgba(0, 0, 0, 0.6), inset 2px 2px 6px rgba(255, 255, 255, 0.1), 0 2px 6px rgba(0, 0, 0, 0.6);
+            pointer-events: none;
+        }
+
+        .knob-visual::after {
+            content: "";
+            position: absolute;
+            bottom: 18px;
+            left: 50%;
+            width: 4px;
+            height: 26px;
+            border-radius: 2px;
+            background: white;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(var(--angle, -135deg));
+            box-shadow: 0 0 6px rgba(255, 255, 255, 0.6);
+        }
+
         input[type="range"] {
             accent-color: #888;
         }
@@ -59,9 +119,22 @@
             gap: 0;
         }
 
+        #canvasWrapper {
+            position: relative;
+            display: inline-block;
+        }
+
         .canvas-col {
             display: flex;
             flex-direction: column;
+        }
+
+        #highlightCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+            z-index: 2;
         }
 
         canvas {
@@ -80,31 +153,61 @@
     <button id="playBtn">Play</button>
     <button id="stopBtn">Stop</button>
 
-    <div class="control">
+    <div class="control knob-control">
         <label for="detuneControl">Detune</label>
-        <input type="range" id="detuneControl" min="0" max="200" value="100">
+        <div class="knob-wrapper">
+            <input type="range" id="detuneControl" min="0" max="200" value="100" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
         <span id="detuneValue">100%</span>
     </div>
 
-    <div class="control">
+    <div class="control knob-control">
         <label for="stereoControl">Stereo</label>
-        <input type="range" id="stereoControl" min="0" max="100" value="100">
+        <div class="knob-wrapper">
+            <input type="range" id="stereoControl" min="0" max="100" value="100" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
         <span id="stereoValue">100%</span>
     </div>
 
-    <div class="control">
+    <div class="control knob-control">
         <label for="speedControl">Speed</label>
-        <input type="range" id="speedControl" min="0.02" max="0.5" step="0.01" value="0.1">
+        <div class="knob-wrapper">
+            <input type="range" id="speedControl" min="0.02" max="0.5" step="0.01" value="0.1" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
         <span id="speedValue">0.10s/col</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="contrastControl">Contrast</label>
+        <div class="knob-wrapper">
+            <input type="range" id="contrastControl" min="0" max="100" value="0" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="contrastValue">0%</span>
+    </div>
+
+    <div class="control knob-control">
+        <label for="baseFreqControl">Base Freq</label>
+        <div class="knob-wrapper">
+            <input type="range" id="baseFreqControl" min="20" max="1000" value="100" class="knob-input">
+            <div class="knob-visual"></div>
+        </div>
+        <span id="baseFreqValue">100 Hz</span>
     </div>
 </div>
 
 <div id="content">
-    <div class="canvas-col">
-        <canvas id="canvasOriginal"></canvas>
-        <canvas id="canvasR"></canvas>
-        <canvas id="canvasG"></canvas>
-        <canvas id="canvasB"></canvas>
+    <div id="canvasWrapper">
+        <div class="canvas-col">
+            <canvas id="canvasOriginal"></canvas>
+            <canvas id="canvasR"></canvas>
+            <canvas id="canvasG"></canvas>
+            <canvas id="canvasB"></canvas>
+        </div>
+        <canvas id="highlightCanvas" width="0" height="0"></canvas>
     </div>
 </div>
 
@@ -119,25 +222,36 @@
     const stereoValue = document.getElementById("stereoValue");
     const speedControl = document.getElementById("speedControl");
     const speedValue = document.getElementById("speedValue");
+    const contrastControl = document.getElementById("contrastControl");
+    const contrastValue = document.getElementById("contrastValue");
+    const baseFreqControl = document.getElementById("baseFreqControl");
+    const baseFreqValue = document.getElementById("baseFreqValue");
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
     const canvasG = document.getElementById("canvasG");
     const canvasB = document.getElementById("canvasB");
+    const highlightCanvas = document.getElementById("highlightCanvas");
 
     const ctxO = canvasOriginal.getContext("2d");
     const ctxR = canvasR.getContext("2d");
     const ctxG = canvasG.getContext("2d");
     const ctxB = canvasB.getContext("2d");
+    const ctxHighlight = highlightCanvas.getContext("2d");
 
     let audioCtx, workletNode;
     let pixelData = null;
+    let basePixelData = null;
+    let processedPixelData = null;
+    let currentColumn = null;
+    let displayScaleX = 1;
     const maxHeight = 100;
-    const baseFreq = 100;
 
     let detuneAmount = parseFloat(detuneControl.value) / 100;
     let stereoWidth = parseFloat(stereoControl.value) / 100;
     let durationPerColumn = parseFloat(speedControl.value);
+    let contrastAmount = parseFloat(contrastControl.value);
+    let baseFrequency = parseFloat(baseFreqControl.value) || 100;
 
     const updateDetuneDisplay = () => {
         detuneValue.textContent = `${Math.round(detuneAmount * 100)}%`;
@@ -151,9 +265,158 @@
         speedValue.textContent = `${durationPerColumn.toFixed(2)}s/col`;
     };
 
+    const updateContrastDisplay = () => {
+        contrastValue.textContent = `${Math.round(contrastAmount)}%`;
+    };
+
+    const updateBaseFreqDisplay = () => {
+        baseFreqValue.textContent = `${Math.round(baseFrequency)} Hz`;
+    };
+
+    const setKnobAngle = (input) => {
+        if (!input) return;
+        const wrapper = input.closest('.knob-wrapper');
+        if (!wrapper) return;
+        const visual = wrapper.querySelector('.knob-visual');
+        if (!visual) return;
+        const min = parseFloat(input.min ?? '0');
+        const max = parseFloat(input.max ?? '100');
+        const value = parseFloat(input.value ?? '0');
+        if (!isFinite(min) || !isFinite(max) || max === min || !isFinite(value)) {
+            visual.style.setProperty('--angle', '-135deg');
+            return;
+        }
+        const ratio = Math.min(1, Math.max(0, (value - min) / (max - min)));
+        const angle = ratio * 270 - 135;
+        visual.style.setProperty('--angle', `${angle}deg`);
+    };
+
+    const registerKnob = (input) => {
+        if (!input) return;
+        setKnobAngle(input);
+        input.addEventListener('input', () => setKnobAngle(input));
+    };
+
+    const clearHighlight = () => {
+        ctxHighlight.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
+        currentColumn = null;
+    };
+
+    const drawHighlight = (column) => {
+        if (!pixelData) return;
+        if (!highlightCanvas.width) return;
+        const start = Math.round(column * displayScaleX);
+        const end = Math.round((column + 1) * displayScaleX);
+        const drawWidth = Math.max(1, Math.min(highlightCanvas.width - start, end - start));
+        if (drawWidth <= 0) return;
+        currentColumn = column;
+        ctxHighlight.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
+        ctxHighlight.fillStyle = "rgba(255, 255, 255, 0.85)";
+        ctxHighlight.fillRect(start, 0, drawWidth, highlightCanvas.height);
+    };
+
+    const clampChannel = (value) => Math.max(0, Math.min(255, Math.round(value)));
+
+    const drawChannelToCanvas = (imgData, ctxTarget, targetCanvas) => {
+        const helper = document.createElement("canvas");
+        helper.width = imgData.width;
+        helper.height = imgData.height;
+        const hctx = helper.getContext("2d");
+        hctx.putImageData(imgData, 0, 0);
+        ctxTarget.imageSmoothingEnabled = false;
+        ctxTarget.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+        ctxTarget.drawImage(helper, 0, 0, targetCanvas.width, targetCanvas.height);
+    };
+
+    const rebuildVisuals = () => {
+        if (!processedPixelData || !pixelData) return;
+        const {width, height} = pixelData;
+        const src = processedPixelData;
+        const imgM = ctxO.createImageData(width, height);
+        const imgR = ctxR.createImageData(width, height);
+        const imgG = ctxG.createImageData(width, height);
+        const imgB = ctxB.createImageData(width, height);
+
+        for (let i = 0; i < src.length; i += 4) {
+            const r = src[i];
+            const g = src[i + 1];
+            const b = src[i + 2];
+            const a = src[i + 3];
+            const mag = clampChannel(Math.sqrt(r * r + g * g + b * b) / Math.sqrt(3 * 255 * 255) * 255);
+
+            imgM.data[i] = mag;
+            imgM.data[i + 1] = mag;
+            imgM.data[i + 2] = mag;
+            imgM.data[i + 3] = a;
+
+            imgR.data[i] = r;
+            imgR.data[i + 1] = 0;
+            imgR.data[i + 2] = 0;
+            imgR.data[i + 3] = a;
+
+            imgG.data[i] = 0;
+            imgG.data[i + 1] = g;
+            imgG.data[i + 2] = 0;
+            imgG.data[i + 3] = a;
+
+            imgB.data[i] = 0;
+            imgB.data[i + 1] = 0;
+            imgB.data[i + 2] = b;
+            imgB.data[i + 3] = a;
+        }
+
+        drawChannelToCanvas(imgM, ctxO, canvasOriginal);
+        drawChannelToCanvas(imgR, ctxR, canvasR);
+        drawChannelToCanvas(imgG, ctxG, canvasG);
+        drawChannelToCanvas(imgB, ctxB, canvasB);
+    };
+
+    const recomputePixelData = () => {
+        if (!basePixelData) return;
+        const source = basePixelData.data;
+        const adjusted = new Uint8ClampedArray(source.length);
+        const amount = Number.isFinite(contrastAmount) ? Math.max(0, contrastAmount) : 0;
+        if (amount === 0) {
+            adjusted.set(source);
+        } else {
+            const contrast = Math.min(150, amount * 1.5);
+            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+            for (let i = 0; i < source.length; i += 4) {
+                adjusted[i] = clampChannel(factor * (source[i] - 128) + 128);
+                adjusted[i + 1] = clampChannel(factor * (source[i + 1] - 128) + 128);
+                adjusted[i + 2] = clampChannel(factor * (source[i + 2] - 128) + 128);
+                adjusted[i + 3] = source[i + 3];
+            }
+        }
+
+        processedPixelData = adjusted;
+        pixelData = {
+            width: basePixelData.width,
+            height: basePixelData.height,
+            data: adjusted
+        };
+
+        rebuildVisuals();
+
+        if (workletNode) {
+            workletNode.port.postMessage({
+                type: "pixels",
+                pixelData
+            });
+        }
+
+        if (currentColumn !== null) {
+            drawHighlight(currentColumn);
+        }
+    };
+
     updateDetuneDisplay();
     updateStereoDisplay();
     updateSpeedDisplay();
+    updateContrastDisplay();
+    updateBaseFreqDisplay();
+
+    [detuneControl, stereoControl, speedControl, contrastControl, baseFreqControl].forEach(registerKnob);
 
     const sendParamsToWorklet = () => {
         if (workletNode) {
@@ -161,7 +424,8 @@
                 type: "params",
                 detuneAmount,
                 stereoWidth,
-                durationPerColumn
+                durationPerColumn,
+                baseFrequency
             });
         }
     };
@@ -184,6 +448,19 @@
         sendParamsToWorklet();
     });
 
+    contrastControl.addEventListener("input", () => {
+        contrastAmount = parseFloat(contrastControl.value);
+        updateContrastDisplay();
+        recomputePixelData();
+    });
+
+    baseFreqControl.addEventListener("input", () => {
+        const parsed = parseFloat(baseFreqControl.value);
+        baseFrequency = Number.isFinite(parsed) ? parsed : baseFrequency;
+        updateBaseFreqDisplay();
+        sendParamsToWorklet();
+    });
+
     uploadBtn.onclick = () => fileInput.click();
 
     fileInput.addEventListener("change", e => {
@@ -202,74 +479,31 @@
             tmpCtx.drawImage(img, 0, 0, newWidth, newHeight);
 
             const imageData = tmpCtx.getImageData(0, 0, newWidth, newHeight);
-            pixelData = {
+            basePixelData = {
                 width: newWidth,
                 height: newHeight,
-                data: Array.from(imageData.data)
+                data: new Uint8ClampedArray(imageData.data)
             };
+            processedPixelData = null;
+            pixelData = null;
 
             // Draw zoomed versions (2x size)
             [canvasOriginal, canvasR, canvasG, canvasB].forEach(c => {
                 c.width = newWidth * 2;
                 c.height = newHeight * 2;
+                c.style.width = `${c.width}px`;
+                c.style.height = `${c.height}px`;
             });
 
-            // Helper canvas for channels
-            function drawChannelToCanvas(imgData, ctxTarget, targetCanvas) {
-                const helper = document.createElement("canvas");
-                helper.width = imgData.width;
-                helper.height = imgData.height;
-                const hctx = helper.getContext("2d");
-                hctx.putImageData(imgData, 0, 0);
-                ctxTarget.imageSmoothingEnabled = false;
-                ctxTarget.drawImage(helper, 0, 0, targetCanvas.width, targetCanvas.height);
-            }
-
-            // Magnitude channel
-            const imgM = ctxO.createImageData(newWidth, newHeight);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                const r = imageData.data[i];
-                const g = imageData.data[i + 1];
-                const b = imageData.data[i + 2];
-                const mag = Math.sqrt(r * r + g * g + b * b) / Math.sqrt(3 * 255 * 255) * 255;
-
-                imgM.data[i] = mag;
-                imgM.data[i + 1] = mag;
-                imgM.data[i + 2] = mag;
-                imgM.data[i + 3] = 255;
-            }
-            drawChannelToCanvas(imgM, ctxO, canvasOriginal);
-
-            // R channel
-            const imgR = ctxR.createImageData(newWidth, newHeight);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                imgR.data[i] = imageData.data[i];     // R
-                imgR.data[i + 1] = 0;
-                imgR.data[i + 2] = 0;
-                imgR.data[i + 3] = 255;
-            }
-            drawChannelToCanvas(imgR, ctxR, canvasR);
-
-            // G channel
-            const imgG = ctxG.createImageData(newWidth, newHeight);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                imgG.data[i] = 0;
-                imgG.data[i + 1] = imageData.data[i + 1];
-                imgG.data[i + 2] = 0;
-                imgG.data[i + 3] = 255;
-            }
-            drawChannelToCanvas(imgG, ctxG, canvasG);
-
-            // B channel
-            const imgB = ctxB.createImageData(newWidth, newHeight);
-            for (let i = 0; i < imageData.data.length; i += 4) {
-                imgB.data[i] = 0;
-                imgB.data[i + 1] = 0;
-                imgB.data[i + 2] = imageData.data[i + 2];
-                imgB.data[i + 3] = 255;
-            }
-            drawChannelToCanvas(imgB, ctxB, canvasB);
-
+            const totalHeight = canvasOriginal.height + canvasR.height + canvasG.height + canvasB.height;
+            const displayWidth = canvasOriginal.width;
+            highlightCanvas.width = displayWidth;
+            highlightCanvas.height = totalHeight;
+            highlightCanvas.style.width = `${displayWidth}px`;
+            highlightCanvas.style.height = `${totalHeight}px`;
+            displayScaleX = displayWidth / newWidth;
+            clearHighlight();
+            recomputePixelData();
             console.log("Image loaded:", newWidth, "x", newHeight);
         };
         img.src = URL.createObjectURL(file);
@@ -291,17 +525,28 @@
 
         workletNode = new AudioWorkletNode(audioCtx, "rgb-full-synth");
         workletNode.connect(audioCtx.destination);
+        workletNode.port.onmessage = (event) => {
+            if (event.data.type === "column") {
+                drawHighlight(event.data.column);
+            }
+        };
+        clearHighlight();
 
         durationPerColumn = parseFloat(speedControl.value);
         detuneAmount = parseFloat(detuneControl.value) / 100;
         stereoWidth = parseFloat(stereoControl.value) / 100;
+        const parsedBase = parseFloat(baseFreqControl.value);
+        if (Number.isFinite(parsedBase)) {
+            baseFrequency = parsedBase;
+        }
         updateSpeedDisplay();
         updateDetuneDisplay();
         updateStereoDisplay();
+        updateBaseFreqDisplay();
 
         workletNode.port.postMessage({
             type: "config",
-            baseFreq,
+            baseFreq: baseFrequency,
             durationPerColumn,
             detuneAmount,
             stereoWidth,
@@ -317,6 +562,7 @@
             audioCtx.close();
             audioCtx = null;
             workletNode = null;
+            clearHighlight();
             console.log("Playback stopped");
         }
     });

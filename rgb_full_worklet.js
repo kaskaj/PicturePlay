@@ -7,6 +7,7 @@ class RgbFullSynth extends AudioWorkletProcessor {
         this.durationPerColumn = 0.1;
         this.detuneAmount = 1;
         this.stereoWidth = 1;
+        this.lastColumnReported = -1;
 
         this.port.onmessage = (event) => {
             if (event.data.type === "config") {
@@ -18,6 +19,7 @@ class RgbFullSynth extends AudioWorkletProcessor {
                     this.durationPerColumn * this.config.sampleRate
                 ));
                 this.t = 0;
+                this.lastColumnReported = -1;
             } else if (event.data.type === "params" && this.config) {
                 if (typeof event.data.durationPerColumn === "number") {
                     this.durationPerColumn = event.data.durationPerColumn;
@@ -34,6 +36,12 @@ class RgbFullSynth extends AudioWorkletProcessor {
                     this.stereoWidth = event.data.stereoWidth;
                     this.config.stereoWidth = this.stereoWidth;
                 }
+                if (typeof event.data.baseFrequency === "number") {
+                    this.config.baseFreq = event.data.baseFrequency;
+                }
+            } else if (event.data.type === "pixels" && this.config && event.data.pixelData) {
+                this.config.pixelData = event.data.pixelData;
+                this.lastColumnReported = -1;
             }
         };
     }
@@ -50,6 +58,10 @@ class RgbFullSynth extends AudioWorkletProcessor {
 
         for (let i = 0; i < L.length; i++) {
             let col = Math.floor(this.t / this.samplesPerColumn) % width;
+            if (col !== this.lastColumnReported) {
+                this.lastColumnReported = col;
+                this.port.postMessage({type: "column", column: col});
+            }
             const sampleIndex = this.t % this.samplesPerColumn;
             const time = sampleIndex / sampleRate;
 
