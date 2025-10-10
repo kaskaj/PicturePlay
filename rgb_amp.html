@@ -184,23 +184,9 @@
             background: none;
         }
 
-        .icon-button.icon-upload::before {
-            width: 14px;
-            height: 14px;
-            border-left: 2px solid #111;
-            border-bottom: 2px solid #111;
-            left: 50%;
-            top: 40%;
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
-
+        .icon-button.icon-upload::before,
         .icon-button.icon-upload::after {
-            width: 2px;
-            height: 16px;
-            background: #111;
-            left: 50%;
-            top: 58%;
-            transform: translate(-50%, -50%);
+            content: none;
         }
 
         .icon-button.icon-play::before {
@@ -221,6 +207,13 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
+        }
+
+        .icon-button .icon-image {
+            width: 28px;
+            height: auto;
+            display: block;
+            pointer-events: none;
         }
 
         .slider-input:disabled {
@@ -326,6 +319,7 @@
             <div class="action-buttons">
                 <button id="uploadBtn" class="icon-button icon-upload" title="Upload">
                     <span class="sr-only">Upload</span>
+                    <img src="icon_picture.png" alt="" class="icon-image">
                 </button>
                 <button id="playBtn" class="icon-button icon-play" title="Play">
                     <span class="sr-only">Play</span>
@@ -448,16 +442,16 @@
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="attackControl">Attack</label>
-                    <span class="slider-value" id="attackValue">0.00s</span>
+                    <span class="slider-value" id="attackValue">0%</span>
                 </div>
-                <input type="range" id="attackControl" min="0" max="1" step="0.01" value="0" class="slider-input">
+                <input type="range" id="attackControl" min="0" max="100" step="1" value="0" class="slider-input">
             </div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="decayControl">Decay</label>
-                    <span class="slider-value" id="decayValue">0.00s</span>
+                    <span class="slider-value" id="decayValue">0%</span>
                 </div>
-                <input type="range" id="decayControl" min="0" max="1" step="0.01" value="0" class="slider-input">
+                <input type="range" id="decayControl" min="0" max="100" step="1" value="0" class="slider-input">
             </div>
         </div>
 
@@ -544,10 +538,21 @@
     let stereoWidth = parseFloat(stereoControl.value) / 100;
     let durationPerColumn = parseFloat(speedControl.value);
     let contrastAmount = parseFloat(contrastControl.value);
-    let exposureAmount = parseFloat(exposureControl.value);
+    let exposureAmount = parseFloat(exposureControl.value) || 0;
     let baseFrequency = parseFloat(baseFreqControl.value) || 100;
-    let attackTime = parseFloat(attackControl.value) || 0;
-    let decayTime = parseFloat(decayControl.value) || 0;
+
+    const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+    const getSliderPercentValue = (input) => {
+        if (!input) return 0;
+        const raw = parseFloat(input.value);
+        return Number.isFinite(raw) ? clamp01(raw / 100) : 0;
+    };
+
+    let attackRatio = getSliderPercentValue(attackControl);
+    let decayRatio = getSliderPercentValue(decayControl);
+    let attackTime = attackRatio * durationPerColumn;
+    let decayTime = decayRatio * durationPerColumn;
     let harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
     let harmonicMode = harmonicModeSelect.value || 'all';
     let baseOctave = parseInt(octaveSelect.value, 10) || 3;
@@ -615,12 +620,12 @@
 
     const updateAttackDisplay = () => {
         setSliderFill(attackControl);
-        attackValue.textContent = `${attackTime.toFixed(2)}s`;
+        attackValue.textContent = `${Math.round(attackRatio * 100)}%`;
     };
 
     const updateDecayDisplay = () => {
         setSliderFill(decayControl);
-        decayValue.textContent = `${decayTime.toFixed(2)}s`;
+        decayValue.textContent = `${Math.round(decayRatio * 100)}%`;
     };
 
     const updateHarmonicsDisplay = () => {
@@ -751,6 +756,11 @@
         setSliderFill(input);
         input.addEventListener('input', () => setSliderFill(input));
         input.addEventListener('change', () => setSliderFill(input));
+    };
+
+    const recalcEnvelopeTimes = () => {
+        attackTime = attackRatio * durationPerColumn;
+        decayTime = decayRatio * durationPerColumn;
     };
 
     const clearHighlight = () => {
@@ -884,6 +894,7 @@
     [detuneControl, stereoControl, speedControl, contrastControl, exposureControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl].forEach(registerSlider);
 
     const sendParamsToWorklet = () => {
+        recalcEnvelopeTimes();
         if (workletNode) {
             const tonalNotes = getSelectedTonalSemitones();
             workletNode.port.postMessage({
@@ -917,19 +928,27 @@
     });
 
     speedControl.addEventListener("input", () => {
-        durationPerColumn = parseFloat(speedControl.value);
+        const parsed = parseFloat(speedControl.value);
+        if (Number.isFinite(parsed)) {
+            durationPerColumn = parsed;
+        }
         updateSpeedDisplay();
+        recalcEnvelopeTimes();
+        updateAttackDisplay();
+        updateDecayDisplay();
         sendParamsToWorklet();
     });
 
     attackControl.addEventListener("input", () => {
-        attackTime = parseFloat(attackControl.value) || 0;
+        attackRatio = getSliderPercentValue(attackControl);
+        recalcEnvelopeTimes();
         updateAttackDisplay();
         sendParamsToWorklet();
     });
 
     decayControl.addEventListener("input", () => {
-        decayTime = parseFloat(decayControl.value) || 0;
+        decayRatio = getSliderPercentValue(decayControl);
+        recalcEnvelopeTimes();
         updateDecayDisplay();
         sendParamsToWorklet();
     });
@@ -1090,8 +1109,9 @@
         if (Number.isFinite(parsedExposure)) {
             exposureAmount = parsedExposure;
         }
-        attackTime = parseFloat(attackControl.value) || 0;
-        decayTime = parseFloat(decayControl.value) || 0;
+        attackRatio = getSliderPercentValue(attackControl);
+        decayRatio = getSliderPercentValue(decayControl);
+        recalcEnvelopeTimes();
         harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
         harmonicMode = harmonicModeSelect.value || 'all';
         const parsedOctave = parseInt(octaveSelect.value, 10);
