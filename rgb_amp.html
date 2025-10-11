@@ -7,7 +7,7 @@
         body {
             margin: 0;
             font-family: sans-serif;
-            background: #f5f6fb;
+            background: #ececec;
             color: #111;
         }
 
@@ -18,7 +18,7 @@
 
         #controlPanel {
             width: 320px;
-            background: #e6e9f2;
+            background: #d4d4d4;
             padding: 14px 14px;
             box-sizing: border-box;
             display: flex;
@@ -35,28 +35,22 @@
 
         .action-buttons {
             display: flex;
-            gap: 8px;
+            gap: 12px;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .action-buttons .icon-button {
-            flex: 1 1 0;
+            flex: 0 0 auto;
         }
 
         .panel-section {
             background: #ffffff;
             border-radius: 10px;
-            padding: 18px;
+            padding: 14px;
             display: flex;
             flex-direction: column;
-            gap: 12px;
-        }
-
-        .section-title {
-            font-size: 12px;
-            font-weight: 600;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: #4a4f5c;
+            gap: 10px;
         }
 
         .hidden {
@@ -73,8 +67,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            font-size: 12px;
-            letter-spacing: 0.06em;
+            font-size: 11px;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #2f3240;
         }
@@ -83,6 +77,7 @@
             font-variant-numeric: tabular-nums;
             font-weight: 600;
             color: #111;
+            font-size: 11px;
         }
 
         .slider-input {
@@ -125,8 +120,8 @@
         }
 
         .select-control label {
-            font-size: 12px;
-            letter-spacing: 0.06em;
+            font-size: 11px;
+            letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #2f3240;
         }
@@ -168,12 +163,13 @@
 
         .icon-button {
             position: relative;
-            padding: 14px 0;
-            min-height: 44px;
-            display: flex;
+            width: 36px;
+            height: 36px;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
-            border-radius: 6px;
+            border-radius: 50%;
+            padding: 0;
         }
 
         .icon-button::before,
@@ -210,7 +206,7 @@
         }
 
         .icon-button .icon-image {
-            width: 28px;
+            width: 20px;
             height: auto;
             display: block;
             pointer-events: none;
@@ -275,8 +271,11 @@
         #content {
             flex: 1;
             position: relative;
-            background: #ffffff;
-            padding: 32px;
+            background-color: #e3e3e3;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
+            padding: 24px;
             box-sizing: border-box;
             display: flex;
             justify-content: center;
@@ -287,6 +286,9 @@
         #canvasWrapper {
             position: relative;
             display: inline-block;
+            background: rgba(255, 255, 255, 0.78);
+            padding: 14px;
+            border-radius: 14px;
         }
 
         .canvas-col {
@@ -331,7 +333,6 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Colors</div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="detuneControl">Detune</label>
@@ -356,7 +357,6 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Image</div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="contrastControl">Contrast</label>
@@ -374,7 +374,6 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Texture</div>
             <div class="slider-control" id="baseFreqWrapper">
                 <div class="slider-header">
                     <label for="baseFreqControl">Base Freq</label>
@@ -438,7 +437,6 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Envelope</div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="attackControl">Attack</label>
@@ -456,13 +454,33 @@
         </div>
 
         <div class="panel-section">
-            <div class="section-title">Effects</div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="reverbControl">Reverb</label>
                     <span class="slider-value" id="reverbValue">0%</span>
                 </div>
                 <input type="range" id="reverbControl" min="0" max="100" value="0" class="slider-input">
+            </div>
+            <div class="slider-control">
+                <div class="slider-header">
+                    <label for="lowEQControl">Low EQ</label>
+                    <span class="slider-value" id="lowEQValue">+4 dB</span>
+                </div>
+                <input type="range" id="lowEQControl" min="-12" max="12" step="1" value="4" class="slider-input">
+            </div>
+            <div class="slider-control">
+                <div class="slider-header">
+                    <label for="midEQControl">Mid EQ</label>
+                    <span class="slider-value" id="midEQValue">0 dB</span>
+                </div>
+                <input type="range" id="midEQControl" min="-12" max="12" step="1" value="0" class="slider-input">
+            </div>
+            <div class="slider-control">
+                <div class="slider-header">
+                    <label for="highEQControl">High EQ</label>
+                    <span class="slider-value" id="highEQValue">-4 dB</span>
+                </div>
+                <input type="range" id="highEQControl" min="-12" max="12" step="1" value="-4" class="slider-input">
             </div>
         </div>
     </aside>
@@ -495,6 +513,12 @@
     const contrastValue = document.getElementById("contrastValue");
     const brightnessControl = document.getElementById("brightnessControl");
     const brightnessValue = document.getElementById("brightnessValue");
+    const lowEQControl = document.getElementById("lowEQControl");
+    const lowEQValue = document.getElementById("lowEQValue");
+    const midEQControl = document.getElementById("midEQControl");
+    const midEQValue = document.getElementById("midEQValue");
+    const highEQControl = document.getElementById("highEQControl");
+    const highEQValue = document.getElementById("highEQValue");
     const baseFreqControl = document.getElementById("baseFreqControl");
     const baseFreqValue = document.getElementById("baseFreqValue");
     const attackControl = document.getElementById("attackControl");
@@ -513,6 +537,7 @@
     const octaveSelect = document.getElementById("octaveSelect");
     const tonalNoteSelector = document.getElementById("tonalNoteSelector");
     const tonalNoteCheckboxes = Array.from(document.querySelectorAll(".tonal-note"));
+    const content = document.getElementById("content");
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
@@ -539,6 +564,9 @@
     let durationPerColumn = parseFloat(speedControl.value);
     let contrastAmount = parseFloat(contrastControl.value);
     let brightnessAmount = parseFloat(brightnessControl.value) || 0;
+    let eqLowGainDb = parseFloat(lowEQControl.value) || 0;
+    let eqMidGainDb = parseFloat(midEQControl.value) || 0;
+    let eqHighGainDb = parseFloat(highEQControl.value) || 0;
     let baseFrequency = parseFloat(baseFreqControl.value) || 100;
     let harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
     let harmonicMode = harmonicModeSelect.value || 'all';
@@ -548,11 +576,16 @@
         return Number.isFinite(parsed) ? parsed / 100 : 1;
     })();
     let reverbMix = parseFloat(reverbControl.value) / 100 || 0;
+    let currentImageURL = null;
 
     let convolverNode = null;
     let dryGainNode = null;
     let wetGainNode = null;
     let reverbImpulseBuffer = null;
+    let eqLowNode = null;
+    let eqMidNode = null;
+    let eqHighNode = null;
+    let eqOutputConnected = false;
 
     const NOTE_TO_SEMITONE = Object.freeze({
         'C': 0,
@@ -611,6 +644,30 @@
         const value = Math.round(brightnessAmount);
         const prefix = value > 0 ? '+' : '';
         brightnessValue.textContent = `${prefix}${value}%`;
+    };
+
+    const formatDb = (value) => {
+        const rounded = Math.round(value);
+        const prefix = rounded > 0 ? '+' : '';
+        return `${prefix}${rounded} dB`;
+    };
+
+    const updateLowEQDisplay = () => {
+        if (!lowEQControl) return;
+        setSliderFill(lowEQControl);
+        lowEQValue.textContent = formatDb(eqLowGainDb);
+    };
+
+    const updateMidEQDisplay = () => {
+        if (!midEQControl) return;
+        setSliderFill(midEQControl);
+        midEQValue.textContent = formatDb(eqMidGainDb);
+    };
+
+    const updateHighEQDisplay = () => {
+        if (!highEQControl) return;
+        setSliderFill(highEQControl);
+        highEQValue.textContent = formatDb(eqHighGainDb);
     };
 
     const updateBaseFreqDisplay = () => {
@@ -711,6 +768,9 @@
 
     const ensureReverbNodes = async () => {
         if (!audioCtx || !workletNode) return;
+        const eqOutput = ensureEQNodes();
+        if (!eqOutput) return;
+
         if (!convolverNode) {
             convolverNode = audioCtx.createConvolver();
             convolverNode.normalize = true;
@@ -718,24 +778,53 @@
             convolverNode.buffer = buffer;
             dryGainNode = audioCtx.createGain();
             wetGainNode = audioCtx.createGain();
+            updateEQFilters();
             updateReverbMix();
-            workletNode.connect(dryGainNode);
-            workletNode.connect(convolverNode);
+            eqOutput.connect(dryGainNode);
+            eqOutput.connect(convolverNode);
             convolverNode.connect(wetGainNode);
             dryGainNode.connect(audioCtx.destination);
             wetGainNode.connect(audioCtx.destination);
+            eqOutputConnected = true;
+        } else if (!eqOutputConnected) {
+            eqOutput.connect(dryGainNode);
+            eqOutput.connect(convolverNode);
+            eqOutputConnected = true;
         }
     };
 
     const teardownReverbNodes = () => {
-        if (workletNode && dryGainNode) workletNode.disconnect(dryGainNode);
-        if (workletNode && convolverNode) workletNode.disconnect(convolverNode);
+        if (eqHighNode && dryGainNode) {
+            try { eqHighNode.disconnect(dryGainNode); } catch (err) {}
+        }
+        if (eqHighNode && convolverNode) {
+            try { eqHighNode.disconnect(convolverNode); } catch (err) {}
+        }
         if (dryGainNode) dryGainNode.disconnect();
         if (wetGainNode) wetGainNode.disconnect();
         if (convolverNode) convolverNode.disconnect();
+        if (workletNode && eqLowNode) {
+            try { workletNode.disconnect(eqLowNode); } catch (err) {}
+        }
+        if (workletNode) {
+            try { workletNode.disconnect(); } catch (err) {}
+        }
+        if (eqLowNode) {
+            try { eqLowNode.disconnect(); } catch (err) {}
+        }
+        if (eqMidNode) {
+            try { eqMidNode.disconnect(); } catch (err) {}
+        }
+        if (eqHighNode) {
+            try { eqHighNode.disconnect(); } catch (err) {}
+        }
         convolverNode = null;
         dryGainNode = null;
         wetGainNode = null;
+        eqLowNode = null;
+        eqMidNode = null;
+        eqHighNode = null;
+        eqOutputConnected = false;
     };
 
     const setSliderFill = (input) => {
@@ -792,6 +881,38 @@
     };
 
     const applyContrastValue = (value, factor) => clampChannel(factor * (value - 128) + 128);
+
+    const updateEQFilters = () => {
+        if (eqLowNode) eqLowNode.gain.value = eqLowGainDb;
+        if (eqMidNode) eqMidNode.gain.value = eqMidGainDb;
+        if (eqHighNode) eqHighNode.gain.value = eqHighGainDb;
+    };
+
+    const ensureEQNodes = () => {
+        if (!audioCtx || !workletNode) return null;
+        if (!eqLowNode) {
+            try { workletNode.disconnect(); } catch (err) {}
+            eqLowNode = audioCtx.createBiquadFilter();
+            eqLowNode.type = "lowshelf";
+            eqLowNode.frequency.value = 200;
+
+            eqMidNode = audioCtx.createBiquadFilter();
+            eqMidNode.type = "peaking";
+            eqMidNode.frequency.value = 1000;
+            eqMidNode.Q.value = 1;
+
+            eqHighNode = audioCtx.createBiquadFilter();
+            eqHighNode.type = "highshelf";
+            eqHighNode.frequency.value = 4000;
+
+            workletNode.connect(eqLowNode);
+            eqLowNode.connect(eqMidNode);
+            eqMidNode.connect(eqHighNode);
+            eqOutputConnected = false;
+        }
+        updateEQFilters();
+        return eqHighNode;
+    };
 
     const drawChannelToCanvas = (imgData, ctxTarget, targetCanvas) => {
         const helper = document.createElement("canvas");
@@ -915,11 +1036,14 @@
     updateHarmonicsDisplay();
     updatePhaseDisplay();
     updateReverbDisplay();
+    updateLowEQDisplay();
+    updateMidEQDisplay();
+    updateHighEQDisplay();
 
     selectedNoteNames = ensureSelectedNotes();
     updateModeUI();
 
-    [detuneControl, stereoControl, speedControl, contrastControl, brightnessControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl].forEach(registerSlider);
+    [detuneControl, stereoControl, speedControl, contrastControl, brightnessControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl, lowEQControl, midEQControl, highEQControl].forEach(registerSlider);
 
     const sendParamsToWorklet = () => {
         recalcEnvelopeTimes();
@@ -1047,6 +1171,34 @@
         });
     }
 
+    const handleEQChange = () => {
+        updateLowEQDisplay();
+        updateMidEQDisplay();
+        updateHighEQDisplay();
+        updateEQFilters();
+    };
+
+    if (lowEQControl) {
+        lowEQControl.addEventListener("input", () => {
+            eqLowGainDb = parseFloat(lowEQControl.value) || 0;
+            handleEQChange();
+        });
+    }
+
+    if (midEQControl) {
+        midEQControl.addEventListener("input", () => {
+            eqMidGainDb = parseFloat(midEQControl.value) || 0;
+            handleEQChange();
+        });
+    }
+
+    if (highEQControl) {
+        highEQControl.addEventListener("input", () => {
+            eqHighGainDb = parseFloat(highEQControl.value) || 0;
+            handleEQChange();
+        });
+    }
+
     baseFreqControl.addEventListener("input", () => {
         const parsed = parseFloat(baseFreqControl.value);
         baseFrequency = Number.isFinite(parsed) ? parsed : baseFrequency;
@@ -1058,8 +1210,24 @@
 
     fileInput.addEventListener("change", e => {
         const file = e.target.files[0];
+        if (!file) return;
+        const objectURL = URL.createObjectURL(file);
         const img = new Image();
         img.onload = () => {
+            if (currentImageURL) {
+                URL.revokeObjectURL(currentImageURL);
+            }
+            currentImageURL = objectURL;
+            if (content) {
+                content.style.backgroundImage = `url('${currentImageURL}')`;
+                content.style.backgroundPosition = "center center";
+                content.style.backgroundRepeat = "no-repeat";
+                if (img.width >= img.height) {
+                    content.style.backgroundSize = "auto 100%";
+                } else {
+                    content.style.backgroundSize = "100% auto";
+                }
+            }
             let scale = img.height > maxHeight ? maxHeight / img.height : 1;
             const newWidth = Math.round(img.width * scale);
             const newHeight = Math.round(img.height * scale);
@@ -1099,7 +1267,10 @@
             recomputePixelData();
             console.log("Image loaded:", newWidth, "x", newHeight);
         };
-        img.src = URL.createObjectURL(file);
+        img.onerror = () => {
+            URL.revokeObjectURL(objectURL);
+        };
+        img.src = objectURL;
     });
 
     playBtn.addEventListener("click", async () => {
