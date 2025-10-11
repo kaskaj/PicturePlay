@@ -4,9 +4,30 @@
     <meta charset="UTF-8">
     <title>RGB Synth UI</title>
     <style>
+        @font-face {
+            font-family: "Archivo Narrow VF";
+            src: url("ArchivoNarrow-VariableFont_wght.ttf") format("truetype");
+            font-weight: 100 900;
+            font-style: normal;
+            font-display: swap;
+        }
+
+        @keyframes rgbFlow {
+            0% {
+                background-position: 0% 0;
+            }
+            50% {
+                background-position: 100% 0;
+            }
+            100% {
+                background-position: 0% 0;
+            }
+        }
+
         body {
             margin: 0;
-            font-family: sans-serif;
+            font-family: "Archivo Narrow VF", "Archivo Narrow", sans-serif;
+            font-variation-settings: "wght" 400;
             color: #111;
             min-height: 100vh;
             position: relative;
@@ -39,41 +60,113 @@
         .panel-actions {
             display: flex;
             flex-direction: column;
-            gap: 12px;
+            gap: 8px;
         }
 
         .panel-header {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            gap: 14px;
+            gap: 16px;
         }
 
-        .panel-title {
-            font-size: 16px;
-            letter-spacing: 0.12em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.92);
-            font-weight: 600;
+        .panel-toolbar-logo {
+            width: 38px;
+            height: 10px;
+            border-radius: 10px;
+            background: linear-gradient(90deg, #ff4d4d 0%, #53ff6d 50%, #4d6bff 100%);
+            background-size: 300% 100%;
+            animation: rgbFlow 15s linear infinite;
         }
 
-        .action-buttons {
+        .panel-toolbar-actions {
             display: flex;
-            gap: 10px;
-            justify-content: flex-end;
             align-items: center;
+            gap: 6px;
+        }
+
+        .icon-button {
+            position: relative;
+            width: 24px;
+            height: 24px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s ease, background 0.1s ease;
+            padding: 0;
+        }
+
+        .icon-button:hover {
+            background: rgba(255, 255, 255, 0.85);
+            transform: translateY(-1px);
+        }
+
+        .icon-button:active {
+            transform: translateY(0);
+            background: rgba(235, 235, 235, 0.9);
+        }
+
+        .icon-button:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .icon-button::before,
+        .icon-button::after {
+            content: "";
+            position: absolute;
+            display: block;
+        }
+
+        .icon-button.icon-upload::before,
+        .icon-button.icon-upload::after {
+            content: none;
+        }
+
+        .icon-button.icon-play::before {
+            width: 0;
+            height: 0;
+            border-top: 8px solid transparent;
+            border-bottom: 8px solid transparent;
+            border-left: 12px solid #222;
+            left: 54%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .icon-button.icon-stop::before {
+            width: 12px;
+            height: 12px;
+            background: #222;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .icon-button .icon-image {
+            height: 12px;
+            width: auto;
+            display: block;
+            pointer-events: none;
         }
 
         .panel-section {
-            background: rgba(255, 255, 255, 0.32);
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 5px;
             padding: 14px;
             display: flex;
             flex-direction: column;
             gap: 10px;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            box-shadow: 0 18px 30px rgba(17, 17, 17, 0.08);
         }
 
         .hidden {
@@ -94,6 +187,8 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #2f3240;
+            font-weight: 520;
+            font-variation-settings: "wght" 520;
         }
 
         .toggle-control input[type="checkbox"] {
@@ -108,14 +203,6 @@
             padding: 6px 0;
         }
 
-        .lfo-title {
-            font-size: 11px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            color: rgba(255, 255, 255, 0.8);
-            font-weight: 500;
-        }
-
         .slider-header {
             display: flex;
             justify-content: space-between;
@@ -123,13 +210,16 @@
             font-size: 11px;
             letter-spacing: 0.04em;
             text-transform: uppercase;
-            color: #2f3240;
+            color: black;
+            font-weight: 520;
+            font-variation-settings: "wght" 520;
         }
 
         .slider-value {
             font-variant-numeric: tabular-nums;
-            font-weight: 600;
-            color: #111;
+            font-weight: 560;
+            font-variation-settings: "wght" 560;
+            color: black;
             font-size: 11px;
         }
 
@@ -139,7 +229,7 @@
             appearance: none;
             height: 6px;
             border-radius: 999px;
-            background: linear-gradient(90deg, #2f3240, #2f3240) left/var(--fill-percentage, 0%) 100% no-repeat, #d9dde6;
+            background: linear-gradient(90deg, #343434, #343434) left/var(--fill-percentage, 0%) 100% no-repeat, white;
             outline: none;
             cursor: pointer;
         }
@@ -150,10 +240,10 @@
 
         .slider-input::-webkit-slider-thumb {
             -webkit-appearance: none;
-            width: 16px;
-            height: 16px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: #111;
+            background: #343434;
             box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
         }
 
@@ -177,6 +267,8 @@
             letter-spacing: 0.04em;
             text-transform: uppercase;
             color: #2f3240;
+            font-weight: 540;
+            font-variation-settings: "wght" 540;
         }
 
         .select-control select {
@@ -184,25 +276,29 @@
             color: #111;
             border: 1px solid #d2d7e1;
             padding: 6px 10px;
-            border-radius: 9px;
+            border-radius: 5px;
             font-size: 13px;
+            font-weight: 440;
+            font-variation-settings: "wght" 440;
+            font-family: inherit;
+        }
+
+        .select-control select option {
+            font-family: inherit;
+            font-weight: 440;
+            font-variation-settings: "wght" 440;
         }
 
         button {
-            background: #fff;
-            color: #111;
+            background: white;
             border: none;
-            border-radius: 6px;
             padding: 10px 14px;
-            font-size: 12px;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
             cursor: pointer;
             transition: background 0.2s ease, transform 0.1s ease, color 0.2s ease;
         }
 
         button:hover {
-            background: #ebedf5;
+            background: #e8e8e8;
         }
 
         button:active {
@@ -212,57 +308,6 @@
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
-        }
-
-        .icon-button {
-            position: relative;
-            width: 36px;
-            height: 36px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            padding: 0;
-        }
-
-        .icon-button::before,
-        .icon-button::after {
-            content: "";
-            position: absolute;
-            display: block;
-            background: none;
-        }
-
-        .icon-button.icon-upload::before,
-        .icon-button.icon-upload::after {
-            content: none;
-        }
-
-        .icon-button.icon-play::before {
-            width: 0;
-            height: 0;
-            border-top: 10px solid transparent;
-            border-bottom: 10px solid transparent;
-            border-left: 14px solid #111;
-            left: 52%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .icon-button.icon-stop::before {
-            width: 16px;
-            height: 16px;
-            background: #111;
-            left: 50%;
-            top: 50%;
-            transform: translate(-50%, -50%);
-        }
-
-        .icon-button .icon-image {
-            width: 20px;
-            height: auto;
-            display: block;
-            pointer-events: none;
         }
 
         .slider-input:disabled {
@@ -292,15 +337,19 @@
             gap: 8px;
             background: #f5f7fc;
             padding: 10px;
-            border-radius: 10px;
+            border-radius: 5px;
             border: 1px solid #e0e4ef;
             color: #2f3240;
+            font-weight: 450;
+            font-variation-settings: "wght" 450;
         }
 
         .tonal-notes__label {
             font-size: 11px;
             letter-spacing: 0.08em;
             text-transform: uppercase;
+            font-weight: 620;
+            font-variation-settings: "wght" 620;
         }
 
         .tonal-notes__grid {
@@ -308,6 +357,8 @@
             grid-template-columns: repeat(6, minmax(0, 1fr));
             gap: 6px 12px;
             font-size: 12px;
+            font-weight: 470;
+            font-variation-settings: "wght" 470;
         }
 
         .tonal-notes__grid label {
@@ -315,6 +366,8 @@
             align-items: center;
             gap: 4px;
             cursor: pointer;
+            font-weight: 520;
+            font-variation-settings: "wght" 520;
         }
 
         .tonal-notes__grid input {
@@ -333,18 +386,27 @@
         }
 
         #canvasWrapper {
-            position: relative;
+            position: absolute;
+            top: 0;
+            left: 0;
             display: inline-block;
+            cursor: grab;
+            touch-action: none;
+            z-index: 1;
+        }
+
+        #canvasWrapper.is-dragging {
+            cursor: grabbing;
         }
 
         .canvas-shell {
             position: relative;
-            background: rgba(255, 255, 255, 0.45);
-            padding: 14px;
-            border-radius: 16px;
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            box-shadow: 0 25px 45px rgba(17, 17, 17, 0.12);
+            background: rgba(255, 255, 255, 0.7);
+            padding: 8px;
+            border-radius: 5px;
+            border: 1px solid rgba(224, 228, 239, 0.8);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
         }
 
         .canvas-col {
@@ -354,8 +416,8 @@
 
         #highlightCanvas {
             position: absolute;
-            top: 14px;
-            left: 14px;
+            top: 8px;
+            left: 8px;
             pointer-events: none;
             z-index: 2;
         }
@@ -375,11 +437,11 @@
         <div class="panel-actions">
             <input type="file" id="fileInput" accept="image/*" style="display:none;">
             <div class="panel-header">
-                <span class="panel-title">RGB Synth</span>
-                <div class="action-buttons">
+                <div class="panel-toolbar-logo" title="RGB Synth"></div>
+                <div class="panel-toolbar-actions">
                     <button id="uploadBtn" class="icon-button icon-upload" title="Upload">
-                        <span class="sr-only">Upload</span>
                         <img src="icon_picture.png" alt="" class="icon-image">
+                        <span class="sr-only">Upload</span>
                     </button>
                     <button id="playBtn" class="icon-button icon-play" title="Play">
                         <span class="sr-only">Play</span>
@@ -441,7 +503,7 @@
         <div class="panel-section">
             <div class="slider-control" id="baseFreqWrapper">
                 <div class="slider-header">
-                    <label for="baseFreqControl">Base Freq</label>
+                    <label for="baseFreqControl">Base Frequency</label>
                     <span class="slider-value" id="baseFreqValue">100 Hz</span>
                 </div>
                 <input type="range" id="baseFreqControl" min="20" max="1000" value="100" class="slider-input">
@@ -551,9 +613,8 @@
 
         <div class="panel-section">
             <div class="lfo-block">
-                <div class="lfo-title">LFO</div>
                 <div class="select-control">
-                    <label for="lfoDestination">Destination</label>
+                    <label for="lfoDestination">LFO Destination</label>
                     <select id="lfoDestination">
                         <option value="none" selected>None</option>
                         <option value="detune">Detune</option>
@@ -653,6 +714,7 @@
     const content = document.getElementById("content");
     const appBody = document.body;
 
+    const canvasWrapper = document.getElementById("canvasWrapper");
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
     const canvasG = document.getElementById("canvasG");
@@ -693,7 +755,7 @@
     let harmonicMode = harmonicModeSelect.value || 'all';
     let baseOctave = parseInt(octaveSelect.value, 10) || 3;
     let reverbMix = parseFloat(reverbControl.value) / 100 || 0;
-    let currentImageURL = null;
+    let currentObjectURL = null;
 
     let convolverNode = null;
     let dryGainNode = null;
@@ -703,6 +765,15 @@
     let eqMidNode = null;
     let eqHighNode = null;
     let eqOutputConnected = false;
+
+    let canvasUserMoved = false;
+    let isDraggingCanvas = false;
+    let dragPointerId = null;
+    let dragStartX = 0;
+    let dragStartY = 0;
+    let dragStartLeft = 0;
+    let dragStartTop = 0;
+    let canvasWasDragged = false;
 
     const NOTE_TO_SEMITONE = Object.freeze({
         'C': 0,
@@ -780,6 +851,21 @@
     });
 
     const clampValue = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const alignCanvasToFirstSection = () => {
+        if (!canvasWrapper || !content || canvasUserMoved) return;
+        const firstPanelSection = document.querySelector(".panel-section");
+        if (!firstPanelSection) return;
+        const sectionRect = firstPanelSection.getBoundingClientRect();
+        const contentRect = content.getBoundingClientRect();
+        const targetTop = Math.max(0, sectionRect.top - contentRect.top);
+        canvasWrapper.style.top = `${targetTop}px`;
+        const wrapperWidth = canvasWrapper.offsetWidth || canvasWrapper.clientWidth;
+        const containerWidth = content.clientWidth;
+        const safeWidth = containerWidth - 16;
+        const maxLeft = wrapperWidth ? Math.max(0, safeWidth - wrapperWidth) : 0;
+        canvasWrapper.style.left = `${maxLeft}px`;
+    };
 
     const getLfoAmplitudeBase = (dest) => {
         const cfg = DEST_SETTINGS[dest];
@@ -1170,6 +1256,80 @@
         input.addEventListener('input', () => setSliderFill(input));
         input.addEventListener('change', () => setSliderFill(input));
     };
+
+    if (canvasWrapper && content) {
+        const setCanvasPosition = (left, top) => {
+            canvasWrapper.style.left = `${left}px`;
+            canvasWrapper.style.top = `${top}px`;
+        };
+
+        const handlePointerDown = (event) => {
+            if (event.button !== 0) return;
+            event.preventDefault();
+            isDraggingCanvas = true;
+            canvasWasDragged = false;
+            canvasWrapper.classList.add("is-dragging");
+            dragPointerId = event.pointerId;
+            canvasWrapper.setPointerCapture(dragPointerId);
+            dragStartX = event.clientX;
+            dragStartY = event.clientY;
+            const contentRect = content.getBoundingClientRect();
+            const wrapperRect = canvasWrapper.getBoundingClientRect();
+            dragStartLeft = wrapperRect.left - contentRect.left;
+            dragStartTop = wrapperRect.top - contentRect.top;
+        };
+
+        const handlePointerMove = (event) => {
+            if (!isDraggingCanvas) return;
+            const dx = event.clientX - dragStartX;
+            const dy = event.clientY - dragStartY;
+            if (!canvasWasDragged && (Math.abs(dx) > 2 || Math.abs(dy) > 2)) {
+                canvasWasDragged = true;
+            }
+            const maxLeft = Math.max(0, content.clientWidth - canvasWrapper.offsetWidth);
+            const nextLeft = Math.min(Math.max(0, dragStartLeft + dx), maxLeft);
+            const nextTop = Math.max(0, dragStartTop + dy);
+            setCanvasPosition(nextLeft, nextTop);
+        };
+
+        const endCanvasDrag = (event) => {
+            if (!isDraggingCanvas) return;
+            if (dragPointerId != null) {
+                try { canvasWrapper.releasePointerCapture(dragPointerId); } catch (err) {}
+            }
+            dragPointerId = null;
+            isDraggingCanvas = false;
+            canvasWrapper.classList.remove("is-dragging");
+            if (canvasWasDragged) {
+                canvasUserMoved = true;
+            }
+        };
+
+        canvasWrapper.addEventListener("pointerdown", handlePointerDown);
+        canvasWrapper.addEventListener("pointermove", handlePointerMove);
+        canvasWrapper.addEventListener("pointerup", endCanvasDrag);
+        canvasWrapper.addEventListener("pointercancel", endCanvasDrag);
+
+        const initialAlign = () => {
+            if (canvasUserMoved) return;
+            alignCanvasToFirstSection();
+            if (canvasWrapper.style.left === "") {
+                canvasWrapper.style.left = "0px";
+            }
+        };
+
+        requestAnimationFrame(initialAlign);
+
+        window.addEventListener("resize", () => {
+            if (canvasUserMoved) return;
+            alignCanvasToFirstSection();
+        });
+
+        window.addEventListener("load", () => {
+            if (canvasUserMoved) return;
+            alignCanvasToFirstSection();
+        });
+    }
 
     const recalcEnvelopeTimes = () => {
         attackTime = attackRatio * durationPerColumn;
@@ -1679,15 +1839,15 @@
     fileInput.addEventListener("change", e => {
         const file = e.target.files[0];
         if (!file) return;
+        if (currentObjectURL) {
+            URL.revokeObjectURL(currentObjectURL);
+            currentObjectURL = null;
+        }
         const objectURL = URL.createObjectURL(file);
+        currentObjectURL = objectURL;
         const img = new Image();
         img.onload = () => {
-            if (currentImageURL) {
-                URL.revokeObjectURL(currentImageURL);
-            }
-            currentImageURL = objectURL;
             if (appBody) {
-                appBody.style.backgroundImage = `url('${currentImageURL}')`;
                 appBody.style.backgroundPosition = "center center";
                 appBody.style.backgroundRepeat = "no-repeat";
                 if (img.width >= img.height) {
@@ -1695,6 +1855,26 @@
                 } else {
                     appBody.style.backgroundSize = "100% auto";
                 }
+                const bgCanvas = document.createElement("canvas");
+                bgCanvas.width = img.width;
+                bgCanvas.height = img.height;
+                const bgCtx = bgCanvas.getContext("2d");
+                bgCtx.drawImage(img, 0, 0, img.width, img.height);
+                const bgImageData = bgCtx.getImageData(0, 0, img.width, img.height);
+                const bgPixels = bgImageData.data;
+                for (let i = 0; i < bgPixels.length; i += 4) {
+                    const r = bgPixels[i];
+                    const g = bgPixels[i + 1];
+                    const b = bgPixels[i + 2];
+                    const gray = Math.round(0.2126 * r + 0.7152 * g + 0.0722 * b);
+                    bgPixels[i] = gray;
+                    bgPixels[i + 1] = gray;
+                    bgPixels[i + 2] = gray;
+                    // alpha stays the same
+                }
+                bgCtx.putImageData(bgImageData, 0, 0);
+                const grayscaleURL = bgCanvas.toDataURL();
+                appBody.style.backgroundImage = `url('${grayscaleURL}')`;
             }
             let scale = img.height > maxHeight ? maxHeight / img.height : 1;
             const newWidth = Math.round(img.width * scale);
@@ -1733,10 +1913,18 @@
             displayScaleX = displayWidth / newWidth;
             clearHighlight();
             recomputePixelData();
+            if (!canvasUserMoved) {
+                alignCanvasToFirstSection();
+            }
             console.log("Image loaded:", newWidth, "x", newHeight);
+            URL.revokeObjectURL(objectURL);
+            currentObjectURL = null;
         };
         img.onerror = () => {
             URL.revokeObjectURL(objectURL);
+            if (currentObjectURL === objectURL) {
+                currentObjectURL = null;
+            }
         };
         img.src = objectURL;
     });
