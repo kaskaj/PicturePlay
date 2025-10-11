@@ -7,8 +7,13 @@
         body {
             margin: 0;
             font-family: sans-serif;
-            background: #ececec;
             color: #111;
+            min-height: 100vh;
+            position: relative;
+            background-color: #ececec;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-size: cover;
         }
 
         #app {
@@ -18,13 +23,17 @@
 
         #controlPanel {
             width: 320px;
-            background: #d4d4d4;
             padding: 14px 14px;
             box-sizing: border-box;
             display: flex;
             flex-direction: column;
             gap: 10px;
             overflow-y: auto;
+            background: transparent;
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            border-right: none;
+            box-shadow: none;
         }
 
         .panel-actions {
@@ -33,24 +42,38 @@
             gap: 12px;
         }
 
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 14px;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.92);
+            font-weight: 600;
+        }
+
         .action-buttons {
             display: flex;
-            gap: 12px;
-            justify-content: space-between;
+            gap: 10px;
+            justify-content: flex-end;
             align-items: center;
         }
 
-        .action-buttons .icon-button {
-            flex: 0 0 auto;
-        }
-
         .panel-section {
-            background: #ffffff;
-            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.32);
+            border-radius: 12px;
             padding: 14px;
             display: flex;
             flex-direction: column;
             gap: 10px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 18px 30px rgba(17, 17, 17, 0.08);
         }
 
         .hidden {
@@ -61,6 +84,21 @@
             display: flex;
             flex-direction: column;
             gap: 6px;
+        }
+
+        .toggle-control {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            color: #2f3240;
+        }
+
+        .toggle-control input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
         }
 
         .slider-header {
@@ -188,10 +226,10 @@
         .icon-button.icon-play::before {
             width: 0;
             height: 0;
-            border-top: 12px solid transparent;
-            border-bottom: 12px solid transparent;
-            border-left: 18px solid #111;
-            left: 53%;
+            border-top: 10px solid transparent;
+            border-bottom: 10px solid transparent;
+            border-left: 14px solid #111;
+            left: 52%;
             top: 50%;
             transform: translate(-50%, -50%);
         }
@@ -271,10 +309,6 @@
         #content {
             flex: 1;
             position: relative;
-            background-color: #e3e3e3;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-size: cover;
             padding: 24px;
             box-sizing: border-box;
             display: flex;
@@ -286,9 +320,16 @@
         #canvasWrapper {
             position: relative;
             display: inline-block;
-            background: rgba(255, 255, 255, 0.78);
+        }
+
+        .canvas-shell {
+            position: relative;
+            background: rgba(255, 255, 255, 0.45);
             padding: 14px;
-            border-radius: 14px;
+            border-radius: 16px;
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            box-shadow: 0 25px 45px rgba(17, 17, 17, 0.12);
         }
 
         .canvas-col {
@@ -298,8 +339,8 @@
 
         #highlightCanvas {
             position: absolute;
-            top: 0;
-            left: 0;
+            top: 14px;
+            left: 14px;
             pointer-events: none;
             z-index: 2;
         }
@@ -318,38 +359,41 @@
     <aside id="controlPanel">
         <div class="panel-actions">
             <input type="file" id="fileInput" accept="image/*" style="display:none;">
-            <div class="action-buttons">
-                <button id="uploadBtn" class="icon-button icon-upload" title="Upload">
-                    <span class="sr-only">Upload</span>
-                    <img src="icon_picture.png" alt="" class="icon-image">
-                </button>
-                <button id="playBtn" class="icon-button icon-play" title="Play">
-                    <span class="sr-only">Play</span>
-                </button>
-                <button id="stopBtn" class="icon-button icon-stop" title="Stop">
-                    <span class="sr-only">Stop</span>
-                </button>
+            <div class="panel-header">
+                <span class="panel-title">RGB Synth</span>
+                <div class="action-buttons">
+                    <button id="uploadBtn" class="icon-button icon-upload" title="Upload">
+                        <span class="sr-only">Upload</span>
+                        <img src="icon_picture.png" alt="" class="icon-image">
+                    </button>
+                    <button id="playBtn" class="icon-button icon-play" title="Play">
+                        <span class="sr-only">Play</span>
+                    </button>
+                    <button id="stopBtn" class="icon-button icon-stop" title="Stop">
+                        <span class="sr-only">Stop</span>
+                    </button>
+                </div>
             </div>
         </div>
 
         <div class="panel-section">
             <div class="slider-control">
                 <div class="slider-header">
-                    <label for="detuneControl">Detune</label>
+                    <label for="detuneControl">G → Detune</label>
                     <span class="slider-value" id="detuneValue">10%</span>
                 </div>
                 <input type="range" id="detuneControl" min="0" max="200" value="10" class="slider-input">
             </div>
             <div class="slider-control">
                 <div class="slider-header">
-                    <label for="phaseControl">Phase</label>
+                    <label for="phaseControl">R → Phase</label>
                     <span class="slider-value" id="phaseValue">100%</span>
                 </div>
                 <input type="range" id="phaseControl" min="0" max="200" value="100" class="slider-input">
             </div>
             <div class="slider-control">
                 <div class="slider-header">
-                    <label for="stereoControl">Stereo</label>
+                    <label for="stereoControl">B → Stereo</label>
                     <span class="slider-value" id="stereoValue">50%</span>
                 </div>
                 <input type="range" id="stereoControl" min="0" max="100" value="50" class="slider-input">
@@ -371,6 +415,12 @@
                 </div>
                 <input type="range" id="brightnessControl" min="-100" max="100" value="0" class="slider-input">
             </div>
+            <div class="slider-control">
+                <label class="toggle-control" for="invertToggle">
+                    <input type="checkbox" id="invertToggle">
+                    <span>Invert Colors</span>
+                </label>
+            </div>
         </div>
 
         <div class="panel-section">
@@ -386,7 +436,7 @@
                     <label for="speedControl">Speed</label>
                     <span class="slider-value" id="speedValue">100 ms/px</span>
                 </div>
-                <input type="range" id="speedControl" min="0.02" max="0.5" step="0.01" value="0.1" class="slider-input">
+                <input type="range" id="speedControl" min="0.01" max="0.5" step="0.01" value="0.1" class="slider-input">
             </div>
             <div class="slider-control">
                 <div class="slider-header">
@@ -487,13 +537,15 @@
 
     <main id="content">
         <div id="canvasWrapper">
-            <div class="canvas-col">
-                <canvas id="canvasOriginal"></canvas>
-                <canvas id="canvasR"></canvas>
-                <canvas id="canvasG"></canvas>
-                <canvas id="canvasB"></canvas>
+            <div class="canvas-shell">
+                <div class="canvas-col">
+                    <canvas id="canvasOriginal"></canvas>
+                    <canvas id="canvasR"></canvas>
+                    <canvas id="canvasG"></canvas>
+                    <canvas id="canvasB"></canvas>
+                </div>
+                <canvas id="highlightCanvas" width="0" height="0"></canvas>
             </div>
-            <canvas id="highlightCanvas" width="0" height="0"></canvas>
         </div>
     </main>
 </div>
@@ -531,6 +583,7 @@
     const phaseValue = document.getElementById("phaseValue");
     const reverbControl = document.getElementById("reverbControl");
     const reverbValue = document.getElementById("reverbValue");
+    const invertToggle = document.getElementById("invertToggle");
     const harmonicModeSelect = document.getElementById("harmonicModeSelect");
     const baseFreqWrapper = document.getElementById("baseFreqWrapper");
     const octaveWrapper = document.getElementById("octaveWrapper");
@@ -538,6 +591,7 @@
     const tonalNoteSelector = document.getElementById("tonalNoteSelector");
     const tonalNoteCheckboxes = Array.from(document.querySelectorAll(".tonal-note"));
     const content = document.getElementById("content");
+    const appBody = document.body;
 
     const canvasOriginal = document.getElementById("canvasOriginal");
     const canvasR = document.getElementById("canvasR");
@@ -564,6 +618,7 @@
     let durationPerColumn = parseFloat(speedControl.value);
     let contrastAmount = parseFloat(contrastControl.value);
     let brightnessAmount = parseFloat(brightnessControl.value) || 0;
+    let invertImage = invertToggle ? invertToggle.checked : false;
     let eqLowGainDb = parseFloat(lowEQControl.value) || 0;
     let eqMidGainDb = parseFloat(midEQControl.value) || 0;
     let eqHighGainDb = parseFloat(highEQControl.value) || 0;
@@ -992,6 +1047,12 @@
                 b = applyBrightnessShift(b, brightnessStrength);
             }
 
+            if (invertImage) {
+                r = 255 - r;
+                g = 255 - g;
+                b = 255 - b;
+            }
+
             if (applyContrast) {
                 r = applyContrastValue(r, contrastFactor);
                 g = applyContrastValue(g, contrastFactor);
@@ -1178,6 +1239,13 @@
         updateEQFilters();
     };
 
+    if (invertToggle) {
+        invertToggle.addEventListener("change", () => {
+            invertImage = invertToggle.checked;
+            recomputePixelData();
+        });
+    }
+
     if (lowEQControl) {
         lowEQControl.addEventListener("input", () => {
             eqLowGainDb = parseFloat(lowEQControl.value) || 0;
@@ -1218,14 +1286,14 @@
                 URL.revokeObjectURL(currentImageURL);
             }
             currentImageURL = objectURL;
-            if (content) {
-                content.style.backgroundImage = `url('${currentImageURL}')`;
-                content.style.backgroundPosition = "center center";
-                content.style.backgroundRepeat = "no-repeat";
+            if (appBody) {
+                appBody.style.backgroundImage = `url('${currentImageURL}')`;
+                appBody.style.backgroundPosition = "center center";
+                appBody.style.backgroundRepeat = "no-repeat";
                 if (img.width >= img.height) {
-                    content.style.backgroundSize = "auto 100%";
+                    appBody.style.backgroundSize = "auto 100%";
                 } else {
-                    content.style.backgroundSize = "100% auto";
+                    appBody.style.backgroundSize = "100% auto";
                 }
             }
             let scale = img.height > maxHeight ? maxHeight / img.height : 1;
