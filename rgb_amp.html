@@ -184,23 +184,9 @@
             background: none;
         }
 
-        .icon-button.icon-upload::before {
-            width: 14px;
-            height: 14px;
-            border-left: 2px solid #111;
-            border-bottom: 2px solid #111;
-            left: 50%;
-            top: 40%;
-            transform: translate(-50%, -50%) rotate(45deg);
-        }
-
+        .icon-button.icon-upload::before,
         .icon-button.icon-upload::after {
-            width: 2px;
-            height: 16px;
-            background: #111;
-            left: 50%;
-            top: 58%;
-            transform: translate(-50%, -50%);
+            content: none;
         }
 
         .icon-button.icon-play::before {
@@ -221,6 +207,13 @@
             left: 50%;
             top: 50%;
             transform: translate(-50%, -50%);
+        }
+
+        .icon-button .icon-image {
+            width: 28px;
+            height: auto;
+            display: block;
+            pointer-events: none;
         }
 
         .slider-input:disabled {
@@ -326,6 +319,7 @@
             <div class="action-buttons">
                 <button id="uploadBtn" class="icon-button icon-upload" title="Upload">
                     <span class="sr-only">Upload</span>
+                    <img src="icon_picture.png" alt="" class="icon-image">
                 </button>
                 <button id="playBtn" class="icon-button icon-play" title="Play">
                     <span class="sr-only">Play</span>
@@ -372,10 +366,10 @@
             </div>
             <div class="slider-control">
                 <div class="slider-header">
-                    <label for="exposureControl">Exposure</label>
-                    <span class="slider-value" id="exposureValue">0%</span>
+                    <label for="brightnessControl">Brightness</label>
+                    <span class="slider-value" id="brightnessValue">0%</span>
                 </div>
-                <input type="range" id="exposureControl" min="-100" max="100" value="0" class="slider-input">
+                <input type="range" id="brightnessControl" min="-100" max="100" value="0" class="slider-input">
             </div>
         </div>
 
@@ -391,7 +385,7 @@
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="speedControl">Speed</label>
-                    <span class="slider-value" id="speedValue">0.10s/col</span>
+                    <span class="slider-value" id="speedValue">100 ms/px</span>
                 </div>
                 <input type="range" id="speedControl" min="0.02" max="0.5" step="0.01" value="0.1" class="slider-input">
             </div>
@@ -448,16 +442,16 @@
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="attackControl">Attack</label>
-                    <span class="slider-value" id="attackValue">0.00s</span>
+                    <span class="slider-value" id="attackValue">0%</span>
                 </div>
-                <input type="range" id="attackControl" min="0" max="1" step="0.01" value="0" class="slider-input">
+                <input type="range" id="attackControl" min="0" max="100" step="1" value="0" class="slider-input">
             </div>
             <div class="slider-control">
                 <div class="slider-header">
                     <label for="decayControl">Decay</label>
-                    <span class="slider-value" id="decayValue">0.00s</span>
+                    <span class="slider-value" id="decayValue">0%</span>
                 </div>
-                <input type="range" id="decayControl" min="0" max="1" step="0.01" value="0" class="slider-input">
+                <input type="range" id="decayControl" min="0" max="100" step="1" value="0" class="slider-input">
             </div>
         </div>
 
@@ -499,8 +493,8 @@
     const speedValue = document.getElementById("speedValue");
     const contrastControl = document.getElementById("contrastControl");
     const contrastValue = document.getElementById("contrastValue");
-    const exposureControl = document.getElementById("exposureControl");
-    const exposureValue = document.getElementById("exposureValue");
+    const brightnessControl = document.getElementById("brightnessControl");
+    const brightnessValue = document.getElementById("brightnessValue");
     const baseFreqControl = document.getElementById("baseFreqControl");
     const baseFreqValue = document.getElementById("baseFreqValue");
     const attackControl = document.getElementById("attackControl");
@@ -544,10 +538,8 @@
     let stereoWidth = parseFloat(stereoControl.value) / 100;
     let durationPerColumn = parseFloat(speedControl.value);
     let contrastAmount = parseFloat(contrastControl.value);
-    let exposureAmount = parseFloat(exposureControl.value);
+    let brightnessAmount = parseFloat(brightnessControl.value) || 0;
     let baseFrequency = parseFloat(baseFreqControl.value) || 100;
-    let attackTime = parseFloat(attackControl.value) || 0;
-    let decayTime = parseFloat(decayControl.value) || 0;
     let harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
     let harmonicMode = harmonicModeSelect.value || 'all';
     let baseOctave = parseInt(octaveSelect.value, 10) || 3;
@@ -592,7 +584,7 @@
 
     const updateSpeedDisplay = () => {
         setSliderFill(speedControl);
-        speedValue.textContent = `${durationPerColumn.toFixed(2)}s/col`;
+        speedValue.textContent = `${(durationPerColumn * 1000).toFixed(0)} ms/px`;
     };
 
     const updateContrastDisplay = () => {
@@ -600,12 +592,25 @@
         contrastValue.textContent = `${Math.round(contrastAmount)}%`;
     };
 
-    const updateExposureDisplay = () => {
-        if (!exposureControl) return;
-        setSliderFill(exposureControl);
-        const value = Math.round(exposureAmount);
+    const clamp01 = (value) => Math.min(1, Math.max(0, value));
+
+    const getSliderPercentValue = (input) => {
+        if (!input) return 0;
+        const raw = parseFloat(input.value);
+        return Number.isFinite(raw) ? clamp01(raw / 100) : 0;
+    };
+
+    let attackRatio = getSliderPercentValue(attackControl);
+    let decayRatio = getSliderPercentValue(decayControl);
+    let attackTime = attackRatio * durationPerColumn;
+    let decayTime = decayRatio * durationPerColumn;
+
+    const updateBrightnessDisplay = () => {
+        if (!brightnessControl) return;
+        setSliderFill(brightnessControl);
+        const value = Math.round(brightnessAmount);
         const prefix = value > 0 ? '+' : '';
-        exposureValue.textContent = `${prefix}${value}%`;
+        brightnessValue.textContent = `${prefix}${value}%`;
     };
 
     const updateBaseFreqDisplay = () => {
@@ -615,12 +620,12 @@
 
     const updateAttackDisplay = () => {
         setSliderFill(attackControl);
-        attackValue.textContent = `${attackTime.toFixed(2)}s`;
+        attackValue.textContent = `${Math.round(attackRatio * 100)}%`;
     };
 
     const updateDecayDisplay = () => {
         setSliderFill(decayControl);
-        decayValue.textContent = `${decayTime.toFixed(2)}s`;
+        decayValue.textContent = `${Math.round(decayRatio * 100)}%`;
     };
 
     const updateHarmonicsDisplay = () => {
@@ -753,6 +758,11 @@
         input.addEventListener('change', () => setSliderFill(input));
     };
 
+    const recalcEnvelopeTimes = () => {
+        attackTime = attackRatio * durationPerColumn;
+        decayTime = decayRatio * durationPerColumn;
+    };
+
     const clearHighlight = () => {
         ctxHighlight.clearRect(0, 0, highlightCanvas.width, highlightCanvas.height);
         currentColumn = null;
@@ -772,6 +782,16 @@
     };
 
     const clampChannel = (value) => Math.max(0, Math.min(255, Math.round(value)));
+
+    const applyBrightnessShift = (value, strength) => {
+        if (strength === 0) return value;
+        if (strength > 0) {
+            return clampChannel(value + (255 - value) * strength);
+        }
+        return clampChannel(value * (1 + strength));
+    };
+
+    const applyContrastValue = (value, factor) => clampChannel(factor * (value - 128) + 128);
 
     const drawChannelToCanvas = (imgData, ctxTarget, targetCanvas) => {
         const helper = document.createElement("canvas");
@@ -829,26 +849,44 @@
 
     const recomputePixelData = () => {
         if (!basePixelData) return;
-        const source = basePixelData.data;
+        const {width, height, data: source} = basePixelData;
         const adjusted = new Uint8ClampedArray(source.length);
-        const amount = Number.isFinite(contrastAmount) ? Math.max(0, contrastAmount) : 0;
-        if (amount === 0) {
-            adjusted.set(source);
-        } else {
-            const contrast = Math.min(150, amount * 1.5);
-            const factor = (259 * (contrast + 255)) / (255 * (259 - contrast));
-            for (let i = 0; i < source.length; i += 4) {
-                adjusted[i] = clampChannel(factor * (source[i] - 128) + 128);
-                adjusted[i + 1] = clampChannel(factor * (source[i + 1] - 128) + 128);
-                adjusted[i + 2] = clampChannel(factor * (source[i + 2] - 128) + 128);
-                adjusted[i + 3] = source[i + 3];
+
+        const brightnessStrength = Number.isFinite(brightnessAmount) ? Math.max(-1, Math.min(1, brightnessAmount / 100)) : 0;
+        const applyContrast = Number.isFinite(contrastAmount) && contrastAmount > 0;
+        let contrastFactor = 1;
+        if (applyContrast) {
+            const contrast = Math.min(150, contrastAmount * 1.5);
+            contrastFactor = (259 * (contrast + 255)) / (255 * (259 - contrast));
+        }
+
+        for (let i = 0; i < source.length; i += 4) {
+            let r = source[i];
+            let g = source[i + 1];
+            let b = source[i + 2];
+
+            if (brightnessStrength !== 0) {
+                r = applyBrightnessShift(r, brightnessStrength);
+                g = applyBrightnessShift(g, brightnessStrength);
+                b = applyBrightnessShift(b, brightnessStrength);
             }
+
+            if (applyContrast) {
+                r = applyContrastValue(r, contrastFactor);
+                g = applyContrastValue(g, contrastFactor);
+                b = applyContrastValue(b, contrastFactor);
+            }
+
+            adjusted[i] = r;
+            adjusted[i + 1] = g;
+            adjusted[i + 2] = b;
+            adjusted[i + 3] = source[i + 3];
         }
 
         processedPixelData = adjusted;
         pixelData = {
-            width: basePixelData.width,
-            height: basePixelData.height,
+            width,
+            height,
             data: adjusted
         };
 
@@ -870,7 +908,7 @@
     updateStereoDisplay();
     updateSpeedDisplay();
     updateContrastDisplay();
-    updateExposureDisplay();
+    updateBrightnessDisplay();
     updateBaseFreqDisplay();
     updateAttackDisplay();
     updateDecayDisplay();
@@ -881,9 +919,10 @@
     selectedNoteNames = ensureSelectedNotes();
     updateModeUI();
 
-    [detuneControl, stereoControl, speedControl, contrastControl, exposureControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl].forEach(registerSlider);
+    [detuneControl, stereoControl, speedControl, contrastControl, brightnessControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl].forEach(registerSlider);
 
     const sendParamsToWorklet = () => {
+        recalcEnvelopeTimes();
         if (workletNode) {
             const tonalNotes = getSelectedTonalSemitones();
             workletNode.port.postMessage({
@@ -917,19 +956,27 @@
     });
 
     speedControl.addEventListener("input", () => {
-        durationPerColumn = parseFloat(speedControl.value);
+        const parsed = parseFloat(speedControl.value);
+        if (Number.isFinite(parsed)) {
+            durationPerColumn = parsed;
+        }
+        recalcEnvelopeTimes();
         updateSpeedDisplay();
+        updateAttackDisplay();
+        updateDecayDisplay();
         sendParamsToWorklet();
     });
 
     attackControl.addEventListener("input", () => {
-        attackTime = parseFloat(attackControl.value) || 0;
+        attackRatio = getSliderPercentValue(attackControl);
+        recalcEnvelopeTimes();
         updateAttackDisplay();
         sendParamsToWorklet();
     });
 
     decayControl.addEventListener("input", () => {
-        decayTime = parseFloat(decayControl.value) || 0;
+        decayRatio = getSliderPercentValue(decayControl);
+        recalcEnvelopeTimes();
         updateDecayDisplay();
         sendParamsToWorklet();
     });
@@ -992,10 +1039,10 @@
         recomputePixelData();
     });
 
-    if (exposureControl) {
-        exposureControl.addEventListener("input", () => {
-            exposureAmount = parseFloat(exposureControl.value) || 0;
-            updateExposureDisplay();
+    if (brightnessControl) {
+        brightnessControl.addEventListener("input", () => {
+            brightnessAmount = parseFloat(brightnessControl.value) || 0;
+            updateBrightnessDisplay();
             recomputePixelData();
         });
     }
@@ -1086,12 +1133,13 @@
         if (Number.isFinite(parsedBase)) {
             baseFrequency = parsedBase;
         }
-        const parsedExposure = parseFloat(exposureControl.value);
-        if (Number.isFinite(parsedExposure)) {
-            exposureAmount = parsedExposure;
+        const parsedBrightness = parseFloat(brightnessControl.value);
+        if (Number.isFinite(parsedBrightness)) {
+            brightnessAmount = parsedBrightness;
         }
-        attackTime = parseFloat(attackControl.value) || 0;
-        decayTime = parseFloat(decayControl.value) || 0;
+        attackRatio = getSliderPercentValue(attackControl);
+        decayRatio = getSliderPercentValue(decayControl);
+        recalcEnvelopeTimes();
         harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
         harmonicMode = harmonicModeSelect.value || 'all';
         const parsedOctave = parseInt(octaveSelect.value, 10);
@@ -1105,7 +1153,7 @@
         updateDetuneDisplay();
         updateStereoDisplay();
         updateBaseFreqDisplay();
-        updateExposureDisplay();
+        updateBrightnessDisplay();
         updateAttackDisplay();
         updateDecayDisplay();
         updateHarmonicsDisplay();
