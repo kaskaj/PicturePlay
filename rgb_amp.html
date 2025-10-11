@@ -101,6 +101,21 @@
             height: 16px;
         }
 
+        .lfo-block {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            padding: 6px 0;
+        }
+
+        .lfo-title {
+            font-size: 11px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 500;
+        }
+
         .slider-header {
             display: flex;
             justify-content: space-between;
@@ -533,6 +548,51 @@
                 <input type="range" id="highEQControl" min="-12" max="12" step="1" value="-4" class="slider-input">
             </div>
         </div>
+
+        <div class="panel-section">
+            <div class="lfo-block">
+                <div class="lfo-title">LFO</div>
+                <div class="select-control">
+                    <label for="lfoDestination">Destination</label>
+                    <select id="lfoDestination">
+                        <option value="none" selected>None</option>
+                        <option value="detune">Detune</option>
+                        <option value="phase">Phase</option>
+                        <option value="stereo">Stereo</option>
+                        <option value="contrast">Contrast</option>
+                        <option value="brightness">Brightness</option>
+                    </select>
+                </div>
+                <div class="select-control">
+                    <label for="lfoMode">Mode</label>
+                    <select id="lfoMode">
+                        <option value="sine" selected>Sine</option>
+                        <option value="random">Sample &amp; Hold</option>
+                    </select>
+                </div>
+                <div class="slider-control">
+                    <div class="slider-header">
+                        <label for="lfoSpeed">Speed</label>
+                        <span class="slider-value" id="lfoSpeedValue">0.200 Hz</span>
+                    </div>
+                    <input type="range" id="lfoSpeed" min="0.001" max="1" step="0.001" value="0.2" class="slider-input">
+                </div>
+                <div class="slider-control">
+                    <div class="slider-header">
+                        <label for="lfoDepth">Depth</label>
+                        <span class="slider-value" id="lfoDepthValue">50%</span>
+                    </div>
+                    <input type="range" id="lfoDepth" min="0" max="100" step="1" value="50" class="slider-input">
+                </div>
+                <div class="slider-control" id="lfoOffsetWrapper">
+                    <div class="slider-header">
+                        <label for="lfoOffset">Offset</label>
+                        <span class="slider-value" id="lfoOffsetValue">—</span>
+                    </div>
+                    <input type="range" id="lfoOffset" min="-100" max="200" step="1" value="0" class="slider-input" disabled>
+                </div>
+            </div>
+        </div>
     </aside>
 
     <main id="content">
@@ -613,11 +673,17 @@
     let displayScaleX = 1;
     const maxHeight = 100;
 
-    let detuneAmount = parseFloat(detuneControl.value) / 100;
-    let stereoWidth = parseFloat(stereoControl.value) / 100;
+    let detuneBase = parseFloat(detuneControl.value) || 0;
+    let phaseBase = parseFloat(phaseControl.value) || 0;
+    let stereoBase = parseFloat(stereoControl.value) || 0;
+    let contrastBase = parseFloat(contrastControl.value) || 0;
+    let brightnessBase = parseFloat(brightnessControl.value) || 0;
+    let detuneAmount = detuneBase / 100;
+    let phaseAmount = phaseBase / 100;
+    let stereoWidth = stereoBase / 100;
     let durationPerColumn = parseFloat(speedControl.value);
-    let contrastAmount = parseFloat(contrastControl.value);
-    let brightnessAmount = parseFloat(brightnessControl.value) || 0;
+    let contrastAmount = contrastBase;
+    let brightnessAmount = brightnessBase;
     let invertImage = invertToggle ? invertToggle.checked : false;
     let eqLowGainDb = parseFloat(lowEQControl.value) || 0;
     let eqMidGainDb = parseFloat(midEQControl.value) || 0;
@@ -626,10 +692,6 @@
     let harmonicCount = parseInt(harmonicsControl.value, 10) || 100;
     let harmonicMode = harmonicModeSelect.value || 'all';
     let baseOctave = parseInt(octaveSelect.value, 10) || 3;
-    let phaseAmount = (() => {
-        const parsed = parseFloat(phaseControl.value);
-        return Number.isFinite(parsed) ? parsed / 100 : 1;
-    })();
     let reverbMix = parseFloat(reverbControl.value) / 100 || 0;
     let currentImageURL = null;
 
@@ -659,6 +721,97 @@
     });
 
     let selectedNoteNames = tonalNoteCheckboxes.filter(cb => cb.checked).map(cb => cb.value);
+    const DEST_SETTINGS = Object.freeze({
+        detune: {
+            min: 0,
+            max: 200,
+            step: 1,
+            getBase: () => detuneBase,
+            setBase: (val) => {
+                const clamped = clampValue(val, 0, 200);
+                detuneBase = clamped;
+                detuneControl.value = clamped;
+            }
+        },
+        phase: {
+            min: 0,
+            max: 200,
+            step: 1,
+            getBase: () => phaseBase,
+            setBase: (val) => {
+                const clamped = clampValue(val, 0, 200);
+                phaseBase = clamped;
+                phaseControl.value = clamped;
+            }
+        },
+        stereo: {
+            min: 0,
+            max: 100,
+            step: 1,
+            getBase: () => stereoBase,
+            setBase: (val) => {
+                const clamped = clampValue(val, 0, 100);
+                stereoBase = clamped;
+                stereoControl.value = clamped;
+            }
+        },
+        contrast: {
+            min: 0,
+            max: 100,
+            step: 1,
+            getBase: () => contrastBase,
+            setBase: (val) => {
+                const clamped = clampValue(val, 0, 100);
+                contrastBase = clamped;
+                contrastControl.value = clamped;
+            }
+        },
+        brightness: {
+            min: -100,
+            max: 100,
+            step: 1,
+            getBase: () => brightnessBase,
+            setBase: (val) => {
+                const clamped = clampValue(val, -100, 100);
+                brightnessBase = clamped;
+                brightnessControl.value = clamped;
+            }
+        }
+    });
+
+    const clampValue = (value, min, max) => Math.min(max, Math.max(min, value));
+
+    const getLfoAmplitudeBase = (dest) => {
+        const cfg = DEST_SETTINGS[dest];
+        if (!cfg) return 0;
+        const min = Number(cfg.min ?? 0);
+        const max = Number(cfg.max ?? 0);
+        if (!Number.isFinite(min) || !Number.isFinite(max)) return 0;
+        return Math.abs(max - min) / 2;
+    };
+
+    const lfoModulations = { detune: 0, phase: 0, stereo: 0, contrast: 0, brightness: 0 };
+    const lfoDestination = document.getElementById("lfoDestination");
+    const lfoMode = document.getElementById("lfoMode");
+    const lfoSpeed = document.getElementById("lfoSpeed");
+    const lfoSpeedValue = document.getElementById("lfoSpeedValue");
+    const lfoDepth = document.getElementById("lfoDepth");
+    const lfoDepthValue = document.getElementById("lfoDepthValue");
+    const lfoOffset = document.getElementById("lfoOffset");
+    const lfoOffsetValue = document.getElementById("lfoOffsetValue");
+    const lfoOffsetWrapper = document.getElementById("lfoOffsetWrapper");
+
+    const lfoState = {
+        dest: lfoDestination ? (lfoDestination.value || 'none') : 'none',
+        mode: lfoMode ? (lfoMode.value || 'sine') : 'sine',
+        offset: lfoOffset ? (parseFloat(lfoOffset.value) || 0) : 0,
+        phase: 0,
+        elapsed: 0,
+        currentValue: 0
+    };
+
+    let lastLfoTime = null;
+    let lfoAnimationId = null;
 
     const updateDetuneDisplay = () => {
         setSliderFill(detuneControl);
@@ -753,6 +906,122 @@
     const updateReverbDisplay = () => {
         setSliderFill(reverbControl);
         reverbValue.textContent = `${Math.round(reverbMix * 100)}%`;
+    };
+
+    const applyLfoModulations = () => {
+        const prevBrightness = brightnessAmount;
+        const prevContrast = contrastAmount;
+
+        const cfg = DEST_SETTINGS[lfoState.dest];
+        if (cfg) {
+            const clampedOffset = clampValue(lfoState.offset, cfg.min, cfg.max);
+            lfoState.offset = clampedOffset;
+            cfg.setBase(clampedOffset);
+        }
+
+        updateLfoOffsetDisplay();
+        brightnessBase = clampValue(brightnessBase, DEST_SETTINGS.brightness.min, DEST_SETTINGS.brightness.max);
+        contrastBase = clampValue(contrastBase, DEST_SETTINGS.contrast.min, DEST_SETTINGS.contrast.max);
+        if (detuneControl) detuneControl.value = detuneBase;
+        if (phaseControl) phaseControl.value = phaseBase;
+        if (stereoControl) stereoControl.value = stereoBase;
+        if (contrastControl) contrastControl.value = contrastBase;
+        if (brightnessControl) brightnessControl.value = brightnessBase;
+
+        const detunePercent = clampValue(detuneBase + (lfoModulations.detune || 0), 0, 200);
+        detuneAmount = detunePercent / 100;
+        updateDetuneDisplay();
+
+        const phasePercent = clampValue(phaseBase + (lfoModulations.phase || 0), 0, 200);
+        phaseAmount = phasePercent / 100;
+        updatePhaseDisplay();
+
+        const stereoPercent = clampValue(stereoBase + (lfoModulations.stereo || 0), 0, 100);
+        stereoWidth = stereoPercent / 100;
+        updateStereoDisplay();
+
+        contrastAmount = clampValue(contrastBase + (lfoModulations.contrast || 0), 0, 100);
+        updateContrastDisplay();
+
+        brightnessAmount = clampValue(brightnessBase + (lfoModulations.brightness || 0), -100, 100);
+        updateBrightnessDisplay();
+
+        if (brightnessAmount !== prevBrightness || contrastAmount !== prevContrast) {
+            recomputePixelData();
+        }
+    };
+
+    const updateLfoSpeedDisplay = (control, display) => {
+        if (!control || !display) return;
+        const speed = parseFloat(control.value) || 0;
+        display.textContent = `${speed.toFixed(3)} Hz`;
+    };
+
+    const updateLfoDepthDisplay = () => {
+        if (!lfoDepth || !lfoDepthValue) return;
+        setSliderFill(lfoDepth);
+        const depth = clampValue(parseFloat(lfoDepth.value) || 0, 0, 100);
+        lfoDepthValue.textContent = `${Math.round(depth)}%`;
+    };
+
+    const formatOffsetValue = (dest, value) => {
+        const rounded = Math.round(value);
+        const prefix = rounded > 0 ? '+' : (rounded < 0 ? '' : '');
+        switch (dest) {
+            case 'brightness':
+            case 'contrast':
+            case 'detune':
+            case 'phase':
+            case 'stereo':
+                return `${rounded > 0 ? '+' : rounded < 0 ? '' : ''}${rounded}%`;
+            default:
+                return `${rounded}`;
+        }
+    };
+
+    const updateLfoOffsetDisplay = () => {
+        if (!lfoOffset || !lfoOffsetValue) return;
+        const dest = lfoState.dest;
+        if (!dest || dest === 'none') {
+            lfoOffsetValue.textContent = '—';
+            setSliderFill(lfoOffset);
+            return;
+        }
+        const cfg = DEST_SETTINGS[dest];
+        if (!cfg) return;
+        const val = clampValue(lfoState.offset, cfg.min, cfg.max);
+        lfoOffsetValue.textContent = formatOffsetValue(dest, val);
+        setSliderFill(lfoOffset);
+    };
+
+    const configureLfoControls = () => {
+        if (!lfoDestination || !lfoOffset) return;
+        const dest = lfoDestination.value || 'none';
+        lfoState.dest = dest;
+        const active = dest !== 'none';
+        [lfoMode, lfoSpeed, lfoDepth, lfoOffset].forEach(ctrl => {
+            if (ctrl) ctrl.disabled = !active;
+        });
+        if (lfoOffsetWrapper) {
+            lfoOffsetWrapper.classList.toggle('hidden', !active);
+        }
+        if (!active) {
+            lfoState.offset = 0;
+            if (lfoOffset) {
+                lfoOffset.value = 0;
+            }
+            updateLfoOffsetDisplay();
+            return;
+        }
+        const cfg = DEST_SETTINGS[dest];
+        if (!cfg) return;
+        lfoOffset.min = cfg.min;
+        lfoOffset.max = cfg.max;
+        lfoOffset.step = cfg.step || 1;
+        const base = clampValue(cfg.getBase(), cfg.min, cfg.max);
+        lfoState.offset = base;
+        lfoOffset.value = base;
+        updateLfoOffsetDisplay();
     };
 
     const ensureSelectedNotes = () => {
@@ -969,6 +1238,67 @@
         return eqHighNode;
     };
 
+    function handleLfoDestinationChange() {
+        if (!lfoDestination) return;
+        const newDest = lfoDestination.value || 'none';
+        if (lfoState.dest && lfoModulations[lfoState.dest] !== undefined) {
+            lfoModulations[lfoState.dest] = 0;
+        }
+        lfoState.dest = newDest;
+        lfoState.phase = 0;
+        lfoState.elapsed = 0;
+        configureLfoControls();
+        applyLfoModulations();
+        sendParamsToWorklet();
+    }
+
+    function runLfoStep(timestamp) {
+        if (!lastLfoTime) lastLfoTime = timestamp;
+        const deltaSeconds = (timestamp - lastLfoTime) / 1000;
+        lastLfoTime = timestamp;
+
+        const dest = lfoState.dest;
+        const mode = lfoState.mode || 'sine';
+        const active = dest && dest !== 'none';
+        const newModulations = { detune: 0, phase: 0, stereo: 0, contrast: 0, brightness: 0 };
+
+        if (active && lfoSpeed && lfoDepth) {
+            const speed = Math.max(0.001, parseFloat(lfoSpeed.value) || 0.001);
+            const depthPercent = clampValue(parseFloat(lfoDepth.value) || 0, 0, 100);
+            const amplitudeBase = getLfoAmplitudeBase(dest);
+            const amplitude = amplitudeBase * (depthPercent / 100);
+
+            if (mode === 'sine') {
+                lfoState.phase = (lfoState.phase + deltaSeconds * speed * Math.PI * 2) % (Math.PI * 2);
+                lfoState.currentValue = Math.sin(lfoState.phase);
+            } else {
+                const interval = speed > 0 ? 1 / speed : 1e6;
+                lfoState.elapsed = (lfoState.elapsed || 0) + deltaSeconds;
+                if (lfoState.elapsed >= interval || lfoState.currentValue === undefined) {
+                    lfoState.currentValue = Math.random() * 2 - 1;
+                    lfoState.elapsed = interval > 0 ? lfoState.elapsed % interval : 0;
+                }
+            }
+
+            newModulations[dest] = (lfoState.currentValue || 0) * amplitude;
+        }
+
+        let needsApply = false;
+        Object.keys(lfoModulations).forEach(key => {
+            if (lfoModulations[key] !== newModulations[key]) {
+                lfoModulations[key] = newModulations[key];
+                needsApply = true;
+            }
+        });
+
+        if (needsApply) {
+            applyLfoModulations();
+            sendParamsToWorklet();
+        }
+
+        lfoAnimationId = requestAnimationFrame(runLfoStep);
+    }
+
     const drawChannelToCanvas = (imgData, ctxTarget, targetCanvas) => {
         const helper = document.createElement("canvas");
         helper.width = imgData.width;
@@ -1086,25 +1416,25 @@
         }
     };
 
-    updateDetuneDisplay();
-    updateStereoDisplay();
+    applyLfoModulations();
     updateSpeedDisplay();
-    updateContrastDisplay();
-    updateBrightnessDisplay();
     updateBaseFreqDisplay();
     updateAttackDisplay();
     updateDecayDisplay();
     updateHarmonicsDisplay();
-    updatePhaseDisplay();
     updateReverbDisplay();
     updateLowEQDisplay();
     updateMidEQDisplay();
     updateHighEQDisplay();
+    updateLfoSpeedDisplay(lfoSpeed, lfoSpeedValue);
+    updateLfoDepthDisplay();
+    configureLfoControls();
+    updateLfoOffsetDisplay();
 
     selectedNoteNames = ensureSelectedNotes();
     updateModeUI();
 
-    [detuneControl, stereoControl, speedControl, contrastControl, brightnessControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl, lowEQControl, midEQControl, highEQControl].forEach(registerSlider);
+    [detuneControl, stereoControl, speedControl, contrastControl, brightnessControl, baseFreqControl, attackControl, decayControl, phaseControl, harmonicsControl, reverbControl, lowEQControl, midEQControl, highEQControl, lfoSpeed, lfoDepth, lfoOffset].forEach(registerSlider);
 
     const sendParamsToWorklet = () => {
         recalcEnvelopeTimes();
@@ -1129,14 +1459,24 @@
     };
 
     detuneControl.addEventListener("input", () => {
-        detuneAmount = parseFloat(detuneControl.value) / 100;
-        updateDetuneDisplay();
+        detuneBase = parseFloat(detuneControl.value) || 0;
+        if (lfoState.dest === 'detune' && lfoOffset) {
+            lfoState.offset = detuneBase;
+            lfoOffset.value = detuneBase;
+            updateLfoOffsetDisplay();
+        }
+        applyLfoModulations();
         sendParamsToWorklet();
     });
 
     stereoControl.addEventListener("input", () => {
-        stereoWidth = parseFloat(stereoControl.value) / 100;
-        updateStereoDisplay();
+        stereoBase = parseFloat(stereoControl.value) || 0;
+        if (lfoState.dest === 'stereo' && lfoOffset) {
+            lfoState.offset = stereoBase;
+            lfoOffset.value = stereoBase;
+            updateLfoOffsetDisplay();
+        }
+        applyLfoModulations();
         sendParamsToWorklet();
     });
 
@@ -1167,9 +1507,13 @@
     });
 
     phaseControl.addEventListener("input", () => {
-        const parsed = parseFloat(phaseControl.value);
-        phaseAmount = Number.isFinite(parsed) ? parsed / 100 : phaseAmount;
-        updatePhaseDisplay();
+        phaseBase = parseFloat(phaseControl.value) || 0;
+        if (lfoState.dest === 'phase' && lfoOffset) {
+            lfoState.offset = phaseBase;
+            lfoOffset.value = phaseBase;
+            updateLfoOffsetDisplay();
+        }
+        applyLfoModulations();
         sendParamsToWorklet();
     });
 
@@ -1219,17 +1563,72 @@
     });
 
     contrastControl.addEventListener("input", () => {
-        contrastAmount = parseFloat(contrastControl.value);
-        updateContrastDisplay();
-        recomputePixelData();
+        contrastBase = parseFloat(contrastControl.value) || 0;
+        if (lfoState.dest === 'contrast' && lfoOffset) {
+            lfoState.offset = contrastBase;
+            lfoOffset.value = contrastBase;
+            updateLfoOffsetDisplay();
+        }
+        applyLfoModulations();
     });
 
     if (brightnessControl) {
         brightnessControl.addEventListener("input", () => {
-            brightnessAmount = parseFloat(brightnessControl.value) || 0;
-            updateBrightnessDisplay();
-            recomputePixelData();
+            brightnessBase = parseFloat(brightnessControl.value) || 0;
+            if (lfoState.dest === 'brightness' && lfoOffset) {
+                lfoState.offset = brightnessBase;
+                lfoOffset.value = brightnessBase;
+                updateLfoOffsetDisplay();
+            }
+            applyLfoModulations();
         });
+    }
+
+    if (lfoSpeed && lfoSpeedValue) {
+        lfoSpeed.addEventListener("input", () => {
+            updateLfoSpeedDisplay(lfoSpeed, lfoSpeedValue);
+        });
+    }
+
+    if (lfoDepth && lfoDepthValue) {
+        lfoDepth.addEventListener("input", () => {
+            updateLfoDepthDisplay();
+            applyLfoModulations();
+            sendParamsToWorklet();
+        });
+    }
+
+    if (lfoOffset) {
+        lfoOffset.addEventListener("input", () => {
+            const dest = lfoState.dest;
+            if (!dest || dest === 'none') return;
+            const cfg = DEST_SETTINGS[dest];
+            if (!cfg) return;
+            const val = clampValue(parseFloat(lfoOffset.value) || 0, cfg.min, cfg.max);
+            lfoState.offset = val;
+            cfg.setBase(val);
+            updateLfoOffsetDisplay();
+            applyLfoModulations();
+            sendParamsToWorklet();
+        });
+    }
+
+    if (lfoMode) {
+        lfoMode.addEventListener("change", () => {
+            lfoState.mode = lfoMode.value || 'sine';
+            lfoState.phase = 0;
+            lfoState.elapsed = 0;
+        });
+    }
+
+    if (lfoDestination) {
+        lfoDestination.addEventListener("change", () => {
+            handleLfoDestinationChange();
+        });
+    }
+
+    if (!lfoAnimationId) {
+        lfoAnimationId = requestAnimationFrame(runLfoStep);
     }
 
     const handleEQChange = () => {
@@ -1242,6 +1641,7 @@
     if (invertToggle) {
         invertToggle.addEventListener("change", () => {
             invertImage = invertToggle.checked;
+            applyLfoModulations();
             recomputePixelData();
         });
     }
